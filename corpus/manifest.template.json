@@ -1,0 +1,9 @@
+[
+  {"path": "corpus/yesbank_fy2020.pdf",   "company": "YesBank",   "fiscal_year": "2020", "class": "distress"},
+  {"path": "corpus/dhfl_fy2019.pdf",      "company": "DHFL",      "fiscal_year": "2019", "class": "distress"},
+  {"path": "corpus/ilfs_fy2018.pdf",      "company": "ILFS",      "fiscal_year": "2018", "class": "distress"},
+  {"path": "corpus/manpasand_fy2018.pdf", "company": "Manpasand", "fiscal_year": "2018", "class": "distress"},
+  {"path": "corpus/infosys_fyXXXX.pdf",   "company": "Infosys",   "fiscal_year": "XXXX", "class": "control"},
+  {"path": "corpus/tcs_fyXXXX.pdf",       "company": "TCS",       "fiscal_year": "XXXX", "class": "control"},
+  {"path": "corpus/hul_fyXXXX.pdf",       "company": "HUL",       "fiscal_year": "XXXX", "class": "control"}
+]
