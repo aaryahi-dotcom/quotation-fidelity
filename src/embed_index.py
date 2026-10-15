@@ -33,6 +33,7 @@ class ChunkIndex:
                                 # import-time dependency for callers that
                                 # only need the dataclass shape (e.g. tests).
     chunks_by_row: list[Chunk]
+    model: object
 
 
 def build_index(chunks: list[Chunk]) -> ChunkIndex:
@@ -49,17 +50,13 @@ def build_index(chunks: list[Chunk]) -> ChunkIndex:
     index = faiss.IndexFlatIP(EMBED_DIM)
     index.add(embeddings)
 
-    return ChunkIndex(index=index, chunks_by_row=list(chunks))
+    return ChunkIndex(index=index, chunks_by_row=list(chunks), model=model)
 
 
 def retrieve(chunk_index: ChunkIndex, query: str, k: int) -> list[Chunk]:
     import numpy as np
-    from sentence_transformers import SentenceTransformer
 
-    model = SentenceTransformer(MODEL_NAME)  # NOTE: re-loading per call is
-    # wasteful -- in run_experiment.py, load the model once and pass it in
-    # rather than calling retrieve() in a tight loop as written here. Left
-    # simple for clarity since this module is unverified either way.
+    model = chunk_index.model
     query_vec = model.encode([query], normalize_embeddings=True,
                               show_progress_bar=False)
     query_vec = np.asarray(query_vec, dtype="float32")

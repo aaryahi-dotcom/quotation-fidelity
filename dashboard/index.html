@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quotation-Fidelity Run</title>
+<style>
+  :root {
+    --bg: #fafafa; --fg: #1a1a1a; --muted: #6b6b6b; --card: #ffffff;
+    --border: #e4e4e4; --bar: #2563eb; --ok: #15803d; --warn: #b45309; --bad: #b91c1c;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #121212; --fg: #eaeaea; --muted: #9a9a9a; --card: #1c1c1c;
+      --border: #2e2e2e; --bar: #60a5fa; --ok: #4ade80; --warn: #fbbf24; --bad: #f87171;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #121212; --fg: #eaeaea; --muted: #9a9a9a; --card: #1c1c1c;
+    --border: #2e2e2e; --bar: #60a5fa; --ok: #4ade80; --warn: #fbbf24; --bad: #f87171;
+  }
+  body { margin: 0; background: var(--bg); color: var(--fg);
+         font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+  main { max-width: 960px; margin: 0 auto; padding: 24px 16px; }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  h2 { font-size: 15px; margin: 24px 0 8px; }
+  .muted { color: var(--muted); }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 16px; }
+  .status { font-weight: 600; }
+  .status.running { color: var(--ok); }
+  .status.stalled { color: var(--warn); }
+  .status.waiting { color: var(--muted); }
+  .bar { height: 10px; background: var(--border); border-radius: 5px; overflow: hidden; margin: 12px 0 6px; }
+  .bar > div { height: 100%; background: var(--bar); width: 0; transition: width .4s; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-top: 12px; }
+  .stat .n { font-size: 22px; font-weight: 600; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { color: var(--muted); font-weight: 500; }
+  td.q { max-width: 380px; overflow-wrap: anywhere; }
+  .wrap { overflow-x: auto; }
+  .bad { color: var(--bad); }
+  .ok { color: var(--ok); }
+</style>
+</head>
+<body>
+<main>
+  <h1>Quotation-Fidelity Run</h1>
+  <div class="muted" id="source">Reading results/generations.csv</div>
+
+  <h2>Status</h2>
+  <div class="card">
+    <div class="status waiting" id="status">Waiting for first results…</div>
+    <div class="muted" id="activity"></div>
+    <div class="bar"><div id="bar"></div></div>
+    <div class="muted" id="progressText"></div>
+    <div class="grid">
+      <div class="stat"><div class="n" id="sRows">0</div><div class="muted">generations logged</div></div>
+      <div class="stat"><div class="n" id="sFilings">0 / 0</div><div class="muted">filings complete</div></div>
+      <div class="stat"><div class="n" id="sGrounded">0</div><div class="muted">verified (exact or fuzzy)</div></div>
+      <div class="stat"><div class="n" id="sFailed">0</div><div class="muted">schema failures</div></div>
+    </div>
+  </div>
+
+  <h2>Per filing</h2>
+  <div class="card wrap">
+    <table>
+      <thead><tr><th>Company</th><th>FY</th><th>Done</th><th>Verified</th><th>No finding</th><th>Failed</th></tr></thead>
+      <tbody id="filings"><tr><td colspan="6" class="muted">No rows yet</td></tr></tbody>
+    </table>
+  </div>
+
+  <h2>Verification outcomes</h2>
+  <div class="card wrap">
+    <table>
+      <thead><tr><th>Outcome</th><th>Count</th></tr></thead>
+      <tbody id="outcomes"><tr><td colspan="2" class="muted">No rows yet</td></tr></tbody>
+    </table>
+  </div>
+
+  <h2>Latest 15 generations</h2>
+  <div class="card wrap">
+    <table>
+      <thead><tr><th>Company</th><th>Theme</th><th>k</th><th>Condition</th><th>Outcome</th><th>Quotation</th></tr></thead>
+      <tbody id="recent"><tr><td colspan="6" class="muted">No rows yet</td></tr></tbody>
+    </table>
+  </div>
+</main>
+
+<script>
+// Set these to match the run.
+const TOTAL_FILINGS = 7;
+const CONDITIONS_PER_FILING = 5 * 4 * 2; // 5 themes x k in {1,3,5,10} x 2 prompt conditions
+const CSV_URL = "../results/generations.csv";
+const POLL_MS = 5000;
+const RUNNING_WITHIN_MS = 2 * 60 * 1000;
+const STALLED_AFTER_MS = 10 * 60 * 1000;
+
+function parseCSV(text) {
+  const rows = [];
+  let row = [], field = "", inQuotes = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (inQuotes) {
+      if (c === '"' && text[i + 1] === '"') { field += '"'; i++; }
+      else if (c === '"') inQuotes = false;
+      else field += c;
+    } else if (c === '"') inQuotes = true;
+    else if (c === ",") { row.push(field); field = ""; }
+    else if (c === "\n") { row.push(field); rows.push(row); row = []; field = ""; }
+    else if (c !== "\r") field += c;
+  }
+  if (field || row.length) { row.push(field); rows.push(row); }
+  if (!rows.length) return [];
+  const header = rows.shift();
+  return rows.filter(r => r.length === header.length)
+              .map(r => Object.fromEntries(header.map((h, i) => [h, r[i]])));
+}
+
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c =>
+  ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"}[c]));
+
+const GROUNDED = new Set(["exact_match", "fuzzy_match"]);
+const FAILED = new Set(["schema_failure_after_retries"]);
+let lastCount = -1, lastGrowthAt = 0;
+
+function render(rows) {
+  const now = Date.now();
+  if (rows.length > lastCount) { lastCount = rows.length; lastGrowthAt = now; }
+
+  const filings = new Map();
+  const outcomes = new Map();
+  let grounded = 0, failed = 0, noFinding = 0;
+  for (const r of rows) {
+    const key = r.company + " | " + r.fiscal_year;
+    if (!filings.has(key)) filings.set(key, { company: r.company, fy: r.fiscal_year, done: 0, grounded: 0, none: 0, failed: 0 });
+    const f = filings.get(key);
+    f.done++;
+    const o = r.verification_outcome;
+    outcomes.set(o, (outcomes.get(o) || 0) + 1);
+    if (GROUNDED.has(o)) { f.grounded++; grounded++; }
+    if (o === "no_finding") { f.none++; noFinding++; }
+    if (FAILED.has(o)) { f.failed++; failed++; }
+  }
+
+  const completeFilings = [...filings.values()].filter(f => f.done >= CONDITIONS_PER_FILING).length;
+  const expected = TOTAL_FILINGS * CONDITIONS_PER_FILING;
+  const pct = expected ? Math.min(100, (rows.length / expected) * 100) : 0;
+
+  const statusEl = document.getElementById("status");
+  const idle = now - lastGrowthAt;
+  let cls, label;
+  if (!rows.length) { cls = "waiting"; label = "Waiting for first results…"; }
+  else if (rows.length >= expected) { cls = "running"; label = "Complete"; }
+  else if (idle < RUNNING_WITHIN_MS) { cls = "running"; label = "Running"; }
+  else if (idle < STALLED_AFTER_MS) { cls = "waiting"; label = "Quiet — no new rows for a few minutes"; }
+  else { cls = "stalled"; label = "Stalled? No new rows in over 10 minutes. Check the terminal running run_experiment.py"; }
+  statusEl.className = "status " + cls;
+  statusEl.textContent = label;
+
+  document.getElementById("activity").textContent = rows.length
+    ? "Last new row " + Math.round(idle / 1000) + "s ago · checked " + new Date(now).toLocaleTimeString()
+    : "Checked " + new Date(now).toLocaleTimeString();
+  document.getElementById("bar").style.width = pct.toFixed(1) + "%";
+  document.getElementById("progressText").textContent =
+    rows.length + " of " + expected + " generations (" + pct.toFixed(1) + "%)";
+  document.getElementById("sRows").textContent = rows.length;
+  document.getElementById("sFilings").textContent = completeFilings + " / " + TOTAL_FILINGS;
+  document.getElementById("sGrounded").textContent = grounded;
+  document.getElementById("sFailed").textContent = failed;
+
+  const fRows = [...filings.values()].map(f => `<tr>
+      <td>${esc(f.company)}</td><td>${esc(f.fy)}</td>
+      <td>${f.done} / ${CONDITIONS_PER_FILING}</td><td class="ok">${f.grounded}</td>
+      <td>${f.none}</td><td class="${f.failed ? "bad" : ""}">${f.failed}</td></tr>`).join("");
+  document.getElementById("filings").innerHTML = fRows || '<tr><td colspan="6" class="muted">No rows yet</td></tr>';
+
+  const oRows = [...outcomes.entries()].sort((a, b) => b[1] - a[1])
+    .map(([o, n]) => `<tr><td>${esc(o)}</td><td>${n}</td></tr>`).join("");
+  document.getElementById("outcomes").innerHTML = oRows || '<tr><td colspan="2" class="muted">No rows yet</td></tr>';
+
+  const recent = rows.slice(-15).reverse().map(r => `<tr>
+      <td>${esc(r.company)}</td><td>${esc(r.theme)}</td><td>${esc(r.k)}</td>
+      <td>${esc(r.prompt_condition)}</td><td>${esc(r.verification_outcome)}</td>
+      <td class="q">${esc(r.quotation)}</td></tr>`).join("");
+  document.getElementById("recent").innerHTML = recent || '<tr><td colspan="6" class="muted">No rows yet</td></tr>';
+}
+
+async function poll() {
+  try {
+    const res = await fetch(CSV_URL, { cache: "no-store" });
+    if (res.status === 404) { render([]); return; }
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    render(parseCSV(await res.text()));
+  } catch (err) {
+    document.getElementById("status").className = "status stalled";
+    document.getElementById("status").textContent = "Cannot read results: " + err.message;
+  }
+}
+
+poll();
+setInterval(poll, POLL_MS);
+</script>
+</body>
+</html>

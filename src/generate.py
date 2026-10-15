@@ -120,7 +120,7 @@ def _parse_free_form(text: str) -> dict | None:
 
 def call_model(theme: str, chunks: dict[str, str], k: int, company: str,
                 fiscal_year: str, condition: PromptCondition,
-                max_retries: int = 3, model_name: str = "gemini-1.5-pro") -> Generation:
+                max_retries: int = 3, model_name: str = "gemini-3.8-flash") -> Generation:
     """Single generation call with the structural guard's retry loop.
 
     Requires GEMINI_API_KEY in the environment and `pip install

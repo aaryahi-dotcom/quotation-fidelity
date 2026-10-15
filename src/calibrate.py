@@ -96,7 +96,7 @@ def run_control_check(positive: list[dict], negative: list[dict]) -> None:
         print("All controls passed at the exact-match stage.")
 
 
-def sweep_fuzzy_threshold(positive: list[dict], rng: random.Random,
+def sweep_fuzzy_threshold(positive: list[dict], negative: list[dict], rng: random.Random,
                            candidates=(0.70, 0.75, 0.80, 0.85, 0.90, 0.95)) -> None:
     """Degrade each positive control and report, per threshold, how many
     degraded (should-still-match) and original (should-exact-match anyway)
@@ -109,18 +109,25 @@ def sweep_fuzzy_threshold(positive: list[dict], rng: random.Random,
             degraded_cases.append((degrade(ctrl["quotation"], mode, rng),
                                     ctrl["chunk_id"], ctrl["context"]))
 
+    negative_cases = [(n["quotation"], n["chunk_id"], n["context"]) for n in negative]
+
     print(f"\nFuzzy threshold sweep over {len(degraded_cases)} degraded "
-          f"positive-control variants:")
-    print(f"{'threshold':>10} {'accepted':>10} {'rejected':>10}")
+          f"positive-control variants and {len(negative_cases)} negative controls:")
+    print(f"{'threshold':>10} {'pos accepted':>13} {'pos rejected':>13} {'neg accepted':>13}")
+    import verify as _v
     for t in candidates:
-        import verify as _v
         _v.FUZZY_THRESHOLD = t
         accepted = sum(
             1 for q, cid, ctx in degraded_cases
             if verify_quotation(q, cid, {cid: ctx}).outcome
             in (Outcome.EXACT_MATCH, Outcome.FUZZY_MATCH)
         )
-        print(f"{t:>10.2f} {accepted:>10} {len(degraded_cases) - accepted:>10}")
+        neg_accepted = sum(
+            1 for q, cid, ctx in negative_cases
+            if verify_quotation(q, cid, {cid: ctx}).outcome
+            in (Outcome.EXACT_MATCH, Outcome.FUZZY_MATCH)
+        )
+        print(f"{t:>10.2f} {accepted:>13} {len(degraded_cases) - accepted:>13} {neg_accepted:>13}")
     print(f"\n(placeholder FUZZY_THRESHOLD in verify.py is {FUZZY_THRESHOLD} "
           f"-- update it to the value chosen from this table, and record the "
           f"choice and its justification in the paper's methodology section.)")
@@ -129,4 +136,4 @@ def sweep_fuzzy_threshold(positive: list[dict], rng: random.Random,
 if __name__ == "__main__":
     positive, negative = load_controls()
     run_control_check(positive, negative)
-    sweep_fuzzy_threshold(positive, random.Random(42))
+    sweep_fuzzy_threshold(positive, negative, random.Random(42))

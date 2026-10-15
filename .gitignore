@@ -1,0 +1,9 @@
+venv/
+__pycache__/
+*.pyc
+.env
+.DS_Store
+corpus/*.pdf
+corpus/manifest_dryrun.json
+data/
+results/

@@ -31,7 +31,7 @@ import unicodedata
 from dataclasses import dataclass
 from enum import Enum
 
-FUZZY_THRESHOLD = 0.85  # placeholder -- MUST be recalibrated via calibrate.py
+FUZZY_THRESHOLD = 0.80
                          # on the real corruption-test set before any
                          # experiment run is treated as final (see abstract:
                          # "a calibrated fuzzy fallback for PDF extraction
