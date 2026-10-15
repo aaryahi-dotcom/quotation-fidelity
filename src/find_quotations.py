@@ -5,30 +5,20 @@ import json
 import re
 
 THEME_KEYWORDS = {
-    "revenue_growth": [
-        r"\b(revenue|sales|turnover|income)\b.*\b(increas|grow|rise|higher)\b",
-        r"\b(profit|earnings|net income)\b.*\b(increas|grow|rise|higher)\b",
-        r"\bgrowth\b.*\b(revenue|sales|earnings|profit)\b",
+    "auditor qualifications and emphases of matter": [
+        r"qualified opinion|emphasis of matter|qualification|adverse opinion|disclaimer of opinion|modified opinion",
     ],
-    "revenue_decline": [
-        r"\b(revenue|sales|turnover|income)\b.*\b(declin|fall|drop|lower|reduc)\b",
-        r"\b(profit|earnings|net income)\b.*\b(declin|fall|drop|lower|reduc)\b",
-        r"\b(contraction|slowdown|weakness)\b",
+    "related-party transactions": [
+        r"related part(y|ies)",
     ],
-    "asset_quality": [
-        r"\b(NPA|non-performing asset|impaired asset|loan loss)\b",
-        r"\b(asset quality|credit quality|portfolio quality)\b",
-        r"\b(default|delinquent|stressed asset)\b",
+    "promoter share pledging": [
+        r"pledg",
     ],
-    "regulatory_breach": [
-        r"\b(regulatory|compliance|violation|breach|sanction)\b",
-        r"\b(audit observation|audit finding|audit qualification)\b",
-        r"\b(governance|internal control|audit committee)\b",
+    "going-concern disclosures": [
+        r"going concern",
     ],
-    "cash_flow_pressure": [
-        r"\b(cash flow|liquidity|working capital)\b.*\b(pressure|stress|tight|constrain)\b",
-        r"\b(debt|borrowing|loan repayment)\b.*\b(challenge|pressure|burden)\b",
-        r"\b(cash equivalents|liquid assets)\b.*\b(declin|reduc|lower)\b",
+    "contingent liabilities and guarantees": [
+        r"contingent liabilit|guarantee",
     ],
 }
 
