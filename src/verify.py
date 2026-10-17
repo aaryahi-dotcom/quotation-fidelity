@@ -119,6 +119,9 @@ def _best_fuzzy_match(needle: str, haystack: str) -> float:
     return best
 
 
+MIN_ALNUM_CHARS = 10
+
+
 def verify_quotation(
     quotation: str,
     claimed_chunk_id: str,
@@ -126,6 +129,9 @@ def verify_quotation(
 ) -> VerificationRecord:
     """Run the four-stage check (support/stage-4 excluded; see module docstring)."""
     q_norm = normalise(quotation)
+    if sum(ch.isalnum() for ch in q_norm) < MIN_ALNUM_CHARS:
+        return VerificationRecord(quotation, claimed_chunk_id,
+                                   Outcome.PURE_FABRICATION, 0.0, None, "too_short")
 
     # Stage 1+3 combined: exact match, checked against every supplied chunk
     # so we can tell "right text, wrong chunk_id" (provenance mismatch) apart

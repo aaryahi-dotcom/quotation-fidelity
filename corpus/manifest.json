@@ -1,0 +1,7 @@
+[
+  {"path": "/Users/aaryahiahluwalia/quotation-fidelity/corpus/infosys-fy2025.pdf", "company": "Infosys", "fiscal_year": "2025", "class": "control"},
+  {"path": "/Users/aaryahiahluwalia/quotation-fidelity/corpus/tcs-latest.pdf", "company": "TCS", "fiscal_year": "2026", "class": "control"},
+  {"path": "/Users/aaryahiahluwalia/quotation-fidelity/corpus/hul-latest.pdf", "company": "HUL", "fiscal_year": "2026", "class": "control"},
+  {"path": "/Users/aaryahiahluwalia/quotation-fidelity/corpus/yes-bank-fy2020.pdf", "company": "YesBank", "fiscal_year": "2020", "class": "distress"},
+  {"path": "/Users/aaryahiahluwalia/quotation-fidelity/corpus/ilfs-fy2018.pdf", "company": "ILFS", "fiscal_year": "2018", "class": "distress"}
+]
