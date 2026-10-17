@@ -1,7 +1,7 @@
 pdfplumber>=0.11
 sentence-transformers>=3.0
 faiss-cpu>=1.8
-google-generativeai>=0.8
+google-genai>=1.0
 # rapidfuzz was planned (per the methodology) but PyPI was unreachable in
 # the build sandbox; verify.py currently uses stdlib difflib instead.
 # If rapidfuzz becomes available, add it here and re-run calibrate.py --

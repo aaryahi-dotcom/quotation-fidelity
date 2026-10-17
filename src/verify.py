@@ -1,3 +1,11 @@
+# Known tooling state (recorded, not yet resolved):
+#   - difflib.SequenceMatcher is used for fuzzy matching (decided 2026-10-17:
+#     kept). rapidfuzz would change the fuzzy scores, so switching would need
+#     recalibration of FUZZY_THRESHOLD. Limitation recorded in the paper.
+#   - generate.py uses the google-genai SDK (migrated 2026-10-17); the
+#     deprecated google-generativeai package is no longer used.
+#   - The project venv runs Python 3.11 (standardised 2026-10-17).
+
 """
 Stage 5: Grounding verifier (the paper's core instrument; = production FR-31).
 
@@ -133,31 +141,36 @@ def verify_quotation(
         return VerificationRecord(quotation, claimed_chunk_id,
                                    Outcome.PURE_FABRICATION, 0.0, None, "too_short")
 
-    # Stage 1+3 combined: exact match, checked against every supplied chunk
-    # so we can tell "right text, wrong chunk_id" (provenance mismatch) apart
-    # from "right text, right chunk_id" (exact_match).
+    # Stage 1+3 combined: exact match. Prefer the claimed chunk, because
+    # adjacent chunks share a 100-word overlap and a quotation inside it occurs
+    # in both. Only if the claimed chunk does not contain it do we look at the
+    # other supplied chunks, which is a provenance mismatch.
+    claimed_text = supplied_chunks.get(claimed_chunk_id)
+    if claimed_text is not None and q_norm in normalise(claimed_text):
+        return VerificationRecord(quotation, claimed_chunk_id,
+                                   Outcome.EXACT_MATCH, 1.0, claimed_chunk_id, "exact")
     for chunk_id, chunk_text in supplied_chunks.items():
-        if q_norm and q_norm in normalise(chunk_text):
-            if chunk_id == claimed_chunk_id:
-                return VerificationRecord(quotation, claimed_chunk_id,
-                                           Outcome.EXACT_MATCH, 1.0, chunk_id, "exact")
-            else:
-                return VerificationRecord(quotation, claimed_chunk_id,
-                                           Outcome.PROVENANCE_MISMATCH, 1.0, chunk_id, "exact")
+        if chunk_id != claimed_chunk_id and q_norm in normalise(chunk_text):
+            return VerificationRecord(quotation, claimed_chunk_id,
+                                       Outcome.PROVENANCE_MISMATCH, 1.0, chunk_id, "exact")
 
-    # Stage 2: fuzzy match, same chunk-by-chunk scan.
-    best_chunk_id, best_score = None, 0.0
-    for chunk_id, chunk_text in supplied_chunks.items():
-        score = _best_fuzzy_match(q_norm, normalise(chunk_text))
-        if score > best_score:
-            best_chunk_id, best_score = chunk_id, score
+    # Stage 2: fuzzy match, with the same claimed-chunk-first rule as stage 1.
+    # Scores are computed once per chunk; the claimed chunk is decided first.
+    scores = {cid: _best_fuzzy_match(q_norm, normalise(text))
+              for cid, text in supplied_chunks.items()}
+    claimed_score = scores.get(claimed_chunk_id, 0.0)
+    if claimed_score >= FUZZY_THRESHOLD:
+        return VerificationRecord(quotation, claimed_chunk_id, Outcome.FUZZY_MATCH,
+                                   claimed_score, claimed_chunk_id, "fuzzy")
 
-    if best_score >= FUZZY_THRESHOLD:
-        outcome = (Outcome.FUZZY_MATCH if best_chunk_id == claimed_chunk_id
-                   else Outcome.PROVENANCE_MISMATCH)
-        return VerificationRecord(quotation, claimed_chunk_id, outcome,
-                                   best_score, best_chunk_id, "fuzzy")
+    other_id, other_score = max(
+        ((cid, s) for cid, s in scores.items() if cid != claimed_chunk_id),
+        key=lambda pair: pair[1], default=(None, 0.0))
+    if other_score >= FUZZY_THRESHOLD:
+        return VerificationRecord(quotation, claimed_chunk_id, Outcome.PROVENANCE_MISMATCH,
+                                   other_score, other_id, "fuzzy")
 
+    best_score = max(scores.values(), default=0.0)
     return VerificationRecord(quotation, claimed_chunk_id,
                                Outcome.PURE_FABRICATION, best_score, None, "none")
 

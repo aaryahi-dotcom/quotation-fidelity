@@ -25,7 +25,7 @@ from pathlib import Path
 from chunk import chunk_extraction
 from embed_index import build_index, retrieve
 from extract import extract_pdf
-from generate import PromptCondition, THEMES, call_model
+from generate import MODEL_NAME, PromptCondition, THEMES, call_model
 from verify import verify_quotation
 
 K_VALUES = (1, 3, 5, 10)
@@ -34,12 +34,13 @@ MIN_REQUEST_INTERVAL_S = 12.5  # free tier: 5 requests per minute
 QUOTA_RETRIES = 5
 QUOTA_BACKOFF_S = 65
 PROMPT_CONDITIONS = (PromptCondition.FREE_FORM, PromptCondition.SCHEMA_JSON)
+MODEL = MODEL_NAME
 
 RESULTS_PATH = Path(__file__).parent.parent / "results" / "generations.csv"
 ROW_FIELDS = [
     "company", "fiscal_year", "theme", "k", "prompt_condition",
     "claimed_chunk_id", "quotation", "verification_outcome", "match_score",
-    "matched_chunk_id", "attempts", "latency_s",
+    "matched_chunk_id", "attempts", "latency_s", "model",
 ]
 
 
@@ -52,7 +53,7 @@ class DailyQuotaExhausted(RuntimeError):
     pass
 
 
-def _call_throttled(theme, supplied, k, company, fiscal_year, condition):
+def _call_throttled(theme, supplied, k, company, fiscal_year, condition, model=MODEL):
     for _ in range(QUOTA_RETRIES):
         if _daily_quota_hit.is_set():
             raise DailyQuotaExhausted("daily quota already exhausted in this run")
@@ -62,7 +63,8 @@ def _call_throttled(theme, supplied, k, company, fiscal_year, condition):
                 time.sleep(wait)
             _last_request[0] = time.monotonic()
         try:
-            return call_model(theme, supplied, k, company, fiscal_year, condition)
+            return call_model(theme, supplied, k, company, fiscal_year, condition,
+                              model_name=model)
         except Exception as exc:
             message = str(exc)
             if "PerDay" in message:
@@ -74,21 +76,34 @@ def _call_throttled(theme, supplied, k, company, fiscal_year, condition):
     raise RuntimeError("Gemini quota retries exhausted")
 
 
-def _job_key(company, fiscal_year, theme, k, condition):
-    return (company, str(fiscal_year), theme, str(k), condition.value)
+def _job_key(company, fiscal_year, theme, k, condition, model=MODEL):
+    return (company, str(fiscal_year), theme, str(k), condition.value, model)
 
 
 def load_done_keys() -> set:
-    """Keys of generations already completed. api_error rows are not counted as
-    done, so they are retried on the next run."""
+    """Keys of generations already completed, including the model, so rows from
+    different models are not treated as duplicates. api_error rows are not
+    counted as done, so they are retried on the next run."""
     if not RESULTS_PATH.exists():
         return set()
     with open(RESULTS_PATH, newline="") as f:
         return {
-            (r["company"], r["fiscal_year"], r["theme"], r["k"], r["prompt_condition"])
+            (r["company"], r["fiscal_year"], r["theme"], r["k"], r["prompt_condition"],
+             r.get("model", ""))
             for r in csv.DictReader(f)
             if r["verification_outcome"] != "api_error"
         }
+
+
+def _check_header(path: Path) -> bool:
+    """True if the file is empty or already has the current ROW_FIELDS header.
+    A file written before the model column existed must not be appended to:
+    DictWriter would write 13-field rows under a 12-field header."""
+    if not path.exists() or path.stat().st_size == 0:
+        return True
+    with open(path, newline="") as f:
+        header = next(csv.reader(f), [])
+    return header == ROW_FIELDS
 
 
 def run_for_filing(pdf_path: str, company: str, fiscal_year: str,
@@ -100,11 +115,10 @@ def run_for_filing(pdf_path: str, company: str, fiscal_year: str,
 
     chunks = chunk_extraction(extraction)
     chunk_index = build_index(chunks)
-    chunk_text_by_id = {c.chunk_id: c.text for c in chunks}
 
     jobs = [
         job for job in itertools.product(THEMES, K_VALUES, PROMPT_CONDITIONS)
-        if _job_key(company, fiscal_year, job[0], job[1], job[2]) not in done
+        if _job_key(company, fiscal_year, job[0], job[1], job[2], MODEL) not in done
     ]
     print(f"  {len(jobs)} generations to run for {company} {fiscal_year}", flush=True)
     supplied_by_job = {}
@@ -114,16 +128,19 @@ def run_for_filing(pdf_path: str, company: str, fiscal_year: str,
 
     def run_one(job: tuple) -> dict:
         theme, k, condition = job
+        # Only the chunks shown to the model for this generation are valid
+        # sources for its quotation.
         supplied = supplied_by_job[job]
         base = {
             "company": company, "fiscal_year": fiscal_year, "theme": theme,
             "k": k, "prompt_condition": condition.value,
             "claimed_chunk_id": "", "quotation": "",
             "verification_outcome": "", "match_score": "", "matched_chunk_id": "",
-            "attempts": "", "latency_s": "",
+            "attempts": "", "latency_s": "", "model": MODEL,
         }
         try:
-            gen = _call_throttled(theme, supplied, k, company, fiscal_year, condition)
+            gen = _call_throttled(theme, supplied, k, company, fiscal_year, condition,
+                                  model=MODEL)
         except DailyQuotaExhausted:
             raise
         except Exception as exc:
@@ -136,7 +153,12 @@ def run_for_filing(pdf_path: str, company: str, fiscal_year: str,
         row["latency_s"] = f"{gen.latency_s:.2f}"
 
         if gen.parsed is None:
-            row["verification_outcome"] = "schema_failure_after_retries"
+            # Free-form output that could not be parsed is its own outcome;
+            # schema-constrained failures keep their existing label.
+            row["verification_outcome"] = (
+                "unparsed_output" if condition is PromptCondition.FREE_FORM
+                else "schema_failure_after_retries"
+            )
             return row
 
         quotation = gen.parsed.get("verbatim_quotation", "")
@@ -146,7 +168,7 @@ def run_for_filing(pdf_path: str, company: str, fiscal_year: str,
         if not quotation:
             row["verification_outcome"] = "no_finding"
         else:
-            rec = verify_quotation(quotation, claimed_chunk, chunk_text_by_id)
+            rec = verify_quotation(quotation, claimed_chunk, supplied)
             row["verification_outcome"] = rec.outcome.value
             row["match_score"] = f"{rec.match_score:.3f}"
             row["matched_chunk_id"] = rec.matched_chunk_id or ""
@@ -163,9 +185,14 @@ def main(corpus_manifest: list[dict]) -> int:
 
     Appends to RESULTS_PATH and skips generations already recorded there, so a
     run stopped by the daily quota can be restarted without duplicate spend.
-    Returns 0 when complete, 3 when stopped by the daily quota.
+    Returns 0 when complete, 3 when stopped by the daily quota, and 4 when the
+    existing CSV header predates the 'model' column (nothing is run).
     """
     RESULTS_PATH.parent.mkdir(exist_ok=True)
+    if not _check_header(RESULTS_PATH):
+        print(f"STOPPED: {RESULTS_PATH} has an older header without the 'model' "
+              f"column. Migrate it before appending; nothing was run.", flush=True)
+        return 4
     done = load_done_keys()
     is_new = not RESULTS_PATH.exists() or RESULTS_PATH.stat().st_size == 0
     with open(RESULTS_PATH, "a", newline="", buffering=1) as f:
