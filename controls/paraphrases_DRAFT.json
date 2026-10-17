@@ -2,41 +2,257 @@
   "status": "reviewed",
   "note": "Machine-drafted paraphrases of positive.json entries. Each must be checked by a person for meaning preservation and plausibility before use in calibration. Set reviewed to true only after checking.",
   "paraphrases": [
-    {"source_index": 0, "reviewed": true, "text": "If we find a material uncertainty, our report must flag it in the auditor's report and the related notes, and if those notes are inadequate we must modify our opinion.", "verdict": "keep"},
-    {"source_index": 0, "reviewed": true, "text": "Where a material uncertainty is identified, the auditor is required to highlight the related disclosures or, failing adequate disclosure, modify the opinion.", "verdict": "fix"},
-    {"source_index": 1, "reviewed": true, "text": "Our findings rest on the audit evidence we gathered up to the date the auditor's report was issued.", "verdict": "keep"},
-    {"source_index": 1, "reviewed": true, "text": "The auditor's conclusions draw on evidence available at the report date.", "verdict": "keep"},
-    {"source_index": 2, "reviewed": true, "text": "Key audit matters are the issues that, in the auditor's judgement, were most important to the audit of the standalone statements for the current year.", "verdict": "keep"},
-    {"source_index": 2, "reviewed": true, "text": "The auditor identified as key audit matters those items of greatest significance to the standalone financial statements for the period.", "verdict": "reject"},
-    {"source_index": 3, "reviewed": true, "text": "The audit opinion does not extend to the other information in the report, and no assurance is given on it.", "verdict": "keep"},
-    {"source_index": 3, "reviewed": true, "text": "Other information included in the report falls outside the scope of the auditor's opinion, which provides no assurance on it.", "verdict": "keep"},
-    {"source_index": 4, "reviewed": true, "text": "Every related party transaction of the company and its subsidiaries is conducted on arm's length terms and within normal business practice.", "verdict": "keep"},
-    {"source_index": 4, "reviewed": true, "text": "The company and its subsidiaries carry out all dealings with related parties at arm's length, in the ordinary course of business.", "verdict": "keep"},
-    {"source_index": 5, "reviewed": true, "text": "The audit committee observed that the transactions in question are on arm's length terms and arise in the ordinary course of business.", "verdict": "keep"},
-    {"source_index": 5, "reviewed": true, "text": "The committee confirmed that the noted transactions were made at arm's length and in the normal course of business.", "verdict": "reject"},
-    {"source_index": 6, "reviewed": true, "text": "The stated limits apply even where the transactions form part of the company's ordinary business and are on arm's length terms.", "verdict": "keep"},
-    {"source_index": 6, "reviewed": true, "text": "Even transactions conducted in the ordinary course and at arm's length remain subject to these limits.", "verdict": "keep"},
-    {"source_index": 7, "reviewed": true, "text": "Transactions with related parties during the year were conducted in the ordinary course of business and at arm's length.", "verdict": "keep"},
-    {"source_index": 7, "reviewed": true, "text": "During the year, related party dealings took place in the normal course of business on arm's length terms.", "verdict": "keep"},
-    {"source_index": 8, "reviewed": true, "text": "Disclosure of transactions with related parties ends once the relationship no longer exists.", "verdict": "keep"},
-    {"source_index": 8, "reviewed": true, "text": "Related parties are disclosed only for as long as the relationship subsists.", "verdict": "reject"},
-    {"source_index": 9, "reviewed": true, "text": "No provision has been made for doubtful debts, and no amounts have been written off or back, in respect of balances due from or to related parties.", "verdict": "keep"},
-    {"source_index": 9, "reviewed": true, "text": "Related party balances carry no doubtful debt provision and no write-off or write-back has been recorded on them.", "verdict": "keep"},
-    {"source_index": 10, "reviewed": true, "text": "The promoters have not pledged any of their shares.", "verdict": "keep"},
-    {"source_index": 10, "reviewed": true, "text": "No promoter share pledging has taken place.", "verdict": "keep"},
-    {"source_index": 11, "reviewed": true, "text": "The shares are under a one-year lock-in and cannot be sold, transferred, or offered as security during that period.", "verdict": "reject"},
-    {"source_index": 11, "reviewed": true, "text": "The shares may not be transferred, marked with a lien, or pledged.", "verdict": "fix"},
-    {"source_index": 12, "reviewed": true, "text": "Future events or conditions could lead the company to stop operating as a going concern.", "verdict": "keep"},
-    {"source_index": 12, "reviewed": true, "text": "The company may be unable to continue as a going concern if future events or conditions so require.", "verdict": "reject"},
-    {"source_index": 13, "reviewed": true, "text": "No significant or material orders from regulators, courts or tribunals have affected the company's going concern status or future operations.", "verdict": "keep"},
-    {"source_index": 13, "reviewed": true, "text": "Regulators, courts and tribunals have issued no material orders that affect the going concern status or the company's future operations.", "verdict": "keep"},
-    {"source_index": 14, "reviewed": true, "text": "In managing capital, the company aims to protect its ability to remain a going concern and keep an optimal capital structure to maximise shareholder value.", "verdict": "keep"},
-    {"source_index": 14, "reviewed": true, "text": "Capital management seeks to preserve the company's going concern and an optimal capital structure, so as to maximise value for shareholders.", "verdict": "keep"},
-    {"source_index": 15, "reviewed": true, "text": "The annual accounts were prepared on the basis that the directors consider the company a going concern.", "verdict": "keep"},
-    {"source_index": 15, "reviewed": true, "text": "The directors prepared the annual accounts assuming the company will continue as a going concern.", "verdict": "keep"},
-    {"source_index": 16, "reviewed": true, "text": "The company has neither given nor received any guarantees in respect of related party receivables or payables.", "verdict": "keep"},
-    {"source_index": 16, "reviewed": true, "text": "No guarantees have been given or taken for amounts receivable from or payable to related parties.", "verdict": "keep"},
-    {"source_index": 17, "reviewed": true, "text": "The contingent liability estimates exclude any interest that counterparties might claim.", "verdict": "keep"},
-    {"source_index": 17, "reviewed": true, "text": "Interest that counterparties could claim is not included in the amounts assessed as contingent liabilities.", "verdict": "keep"}
+    {
+      "source_index": 0,
+      "reviewed": true,
+      "text": "If we find a material uncertainty, our report must flag it in the auditor's report and the related notes, and if those notes are inadequate we must modify our opinion.",
+      "verdict": "keep",
+      "source_quotation": "if we conclude that a material uncertainty exists, we are required to draw attention in our auditor's report to the related disclosures in the standalone financial statements or, if such disclosures are inadequate, to modify our opinion."
+    },
+    {
+      "source_index": 0,
+      "reviewed": true,
+      "text": "Where a material uncertainty is identified, the auditor is required to highlight the related disclosures or, failing adequate disclosure, modify the opinion.",
+      "verdict": "fix",
+      "source_quotation": "if we conclude that a material uncertainty exists, we are required to draw attention in our auditor's report to the related disclosures in the standalone financial statements or, if such disclosures are inadequate, to modify our opinion."
+    },
+    {
+      "source_index": 1,
+      "reviewed": true,
+      "text": "Our findings rest on the audit evidence we gathered up to the date the auditor's report was issued.",
+      "verdict": "keep",
+      "source_quotation": "our conclusions are based on the audit evidence obtained up to the date of our auditor's report."
+    },
+    {
+      "source_index": 1,
+      "reviewed": true,
+      "text": "The auditor's conclusions draw on evidence available at the report date.",
+      "verdict": "keep",
+      "source_quotation": "our conclusions are based on the audit evidence obtained up to the date of our auditor's report."
+    },
+    {
+      "source_index": 2,
+      "reviewed": true,
+      "text": "Key audit matters are the issues that, in the auditor's judgement, were most important to the audit of the standalone statements for the current year.",
+      "verdict": "keep",
+      "source_quotation": "key audit matters are those matters that, in our professional judgment, were of most significance in our audit of the standalone financial statements of the current period."
+    },
+    {
+      "source_index": 2,
+      "reviewed": true,
+      "text": "The auditor identified as key audit matters those items of greatest significance to the standalone financial statements for the period.",
+      "verdict": "reject",
+      "source_quotation": "key audit matters are those matters that, in our professional judgment, were of most significance in our audit of the standalone financial statements of the current period."
+    },
+    {
+      "source_index": 3,
+      "reviewed": true,
+      "text": "The audit opinion does not extend to the other information in the report, and no assurance is given on it.",
+      "verdict": "keep",
+      "source_quotation": "our opinion on the standalone financial statements does not cover the other information and we do not express any form of assurance conclusion thereon."
+    },
+    {
+      "source_index": 3,
+      "reviewed": true,
+      "text": "Other information included in the report falls outside the scope of the auditor's opinion, which provides no assurance on it.",
+      "verdict": "keep",
+      "source_quotation": "our opinion on the standalone financial statements does not cover the other information and we do not express any form of assurance conclusion thereon."
+    },
+    {
+      "source_index": 4,
+      "reviewed": true,
+      "text": "Every related party transaction of the company and its subsidiaries is conducted on arm's length terms and within normal business practice.",
+      "verdict": "keep",
+      "source_quotation": "all related party transactions of the company and its subsidiaries are at arm's length and in the ordinary course of business."
+    },
+    {
+      "source_index": 4,
+      "reviewed": true,
+      "text": "The company and its subsidiaries carry out all dealings with related parties at arm's length, in the ordinary course of business.",
+      "verdict": "keep",
+      "source_quotation": "all related party transactions of the company and its subsidiaries are at arm's length and in the ordinary course of business."
+    },
+    {
+      "source_index": 5,
+      "reviewed": true,
+      "text": "The audit committee observed that the transactions in question are on arm's length terms and arise in the ordinary course of business.",
+      "verdict": "keep",
+      "source_quotation": "the audit committee has noted that the said transactions will be at arm's length basis and in the ordinary course of business."
+    },
+    {
+      "source_index": 5,
+      "reviewed": true,
+      "text": "The committee confirmed that the noted transactions were made at arm's length and in the normal course of business.",
+      "verdict": "reject",
+      "source_quotation": "the audit committee has noted that the said transactions will be at arm's length basis and in the ordinary course of business."
+    },
+    {
+      "source_index": 6,
+      "reviewed": true,
+      "text": "The stated limits apply even where the transactions form part of the company's ordinary business and are on arm's length terms.",
+      "verdict": "keep",
+      "source_quotation": "the said limits are applicable, even if the transactions are in the ordinary course of business of the concerned company and at an arm's length basis."
+    },
+    {
+      "source_index": 6,
+      "reviewed": true,
+      "text": "Even transactions conducted in the ordinary course and at arm's length remain subject to these limits.",
+      "verdict": "keep",
+      "source_quotation": "the said limits are applicable, even if the transactions are in the ordinary course of business of the concerned company and at an arm's length basis."
+    },
+    {
+      "source_index": 7,
+      "reviewed": true,
+      "text": "Transactions with related parties during the year were conducted in the ordinary course of business and at arm's length.",
+      "verdict": "keep",
+      "source_quotation": "related party transactions entered during the year were in ordinary course of the business and on arm's length basis."
+    },
+    {
+      "source_index": 7,
+      "reviewed": true,
+      "text": "During the year, related party dealings took place in the normal course of business on arm's length terms.",
+      "verdict": "keep",
+      "source_quotation": "related party transactions entered during the year were in ordinary course of the business and on arm's length basis."
+    },
+    {
+      "source_index": 8,
+      "reviewed": true,
+      "text": "Disclosure of transactions with related parties ends once the relationship no longer exists.",
+      "verdict": "keep",
+      "source_quotation": "transactions with the related parties are disclosed only till the relationship exists."
+    },
+    {
+      "source_index": 8,
+      "reviewed": true,
+      "text": "Related parties are disclosed only for as long as the relationship subsists.",
+      "verdict": "reject",
+      "source_quotation": "transactions with the related parties are disclosed only till the relationship exists."
+    },
+    {
+      "source_index": 9,
+      "reviewed": true,
+      "text": "No provision has been made for doubtful debts, and no amounts have been written off or back, in respect of balances due from or to related parties.",
+      "verdict": "keep",
+      "source_quotation": "there are no provisions for doubtful debts or amount written off or written back for debts due from or due to related parties."
+    },
+    {
+      "source_index": 9,
+      "reviewed": true,
+      "text": "Related party balances carry no doubtful debt provision and no write-off or write-back has been recorded on them.",
+      "verdict": "keep",
+      "source_quotation": "there are no provisions for doubtful debts or amount written off or written back for debts due from or due to related parties."
+    },
+    {
+      "source_index": 10,
+      "reviewed": true,
+      "text": "The promoters have not pledged any of their shares.",
+      "verdict": "keep",
+      "source_quotation": "there has been no pledging of shares by the promoters/ s."
+    },
+    {
+      "source_index": 10,
+      "reviewed": true,
+      "text": "No promoter share pledging has taken place.",
+      "verdict": "keep",
+      "source_quotation": "there has been no pledging of shares by the promoters/ s."
+    },
+    {
+      "source_index": 11,
+      "reviewed": true,
+      "text": "The shares are under a one-year lock-in and cannot be sold, transferred, or offered as security during that period.",
+      "verdict": "reject",
+      "source_quotation": "they cannot be transferred, lien marked or pledged."
+    },
+    {
+      "source_index": 11,
+      "reviewed": true,
+      "text": "The shares may not be transferred, marked with a lien, or pledged.",
+      "verdict": "fix",
+      "source_quotation": "they cannot be transferred, lien marked or pledged."
+    },
+    {
+      "source_index": 12,
+      "reviewed": true,
+      "text": "Future events or conditions could lead the company to stop operating as a going concern.",
+      "verdict": "keep",
+      "source_quotation": "however, future events or conditions may cause the company to cease to continue as a going concern."
+    },
+    {
+      "source_index": 12,
+      "reviewed": true,
+      "text": "The company may be unable to continue as a going concern if future events or conditions so require.",
+      "verdict": "reject",
+      "source_quotation": "however, future events or conditions may cause the company to cease to continue as a going concern."
+    },
+    {
+      "source_index": 13,
+      "reviewed": true,
+      "text": "No significant or material orders from regulators, courts or tribunals have affected the company's going concern status or future operations.",
+      "verdict": "keep",
+      "source_quotation": "there were no significant and material orders passed by the regulators or courts or tribunals impacting the going concern status and the company's operations in future."
+    },
+    {
+      "source_index": 13,
+      "reviewed": true,
+      "text": "Regulators, courts and tribunals have issued no material orders that affect the going concern status or the company's future operations.",
+      "verdict": "keep",
+      "source_quotation": "there were no significant and material orders passed by the regulators or courts or tribunals impacting the going concern status and the company's operations in future."
+    },
+    {
+      "source_index": 14,
+      "reviewed": true,
+      "text": "In managing capital, the company aims to protect its ability to remain a going concern and keep an optimal capital structure to maximise shareholder value.",
+      "verdict": "keep",
+      "source_quotation": "the company's objective when managing capital is to safeguard its ability to continue as a going concern and to maintain an optimal capital structure so as to maximize shareholder value."
+    },
+    {
+      "source_index": 14,
+      "reviewed": true,
+      "text": "Capital management seeks to preserve the company's going concern and an optimal capital structure, so as to maximise value for shareholders.",
+      "verdict": "keep",
+      "source_quotation": "the company's objective when managing capital is to safeguard its ability to continue as a going concern and to maintain an optimal capital structure so as to maximize shareholder value."
+    },
+    {
+      "source_index": 15,
+      "reviewed": true,
+      "text": "The annual accounts were prepared on the basis that the directors consider the company a going concern.",
+      "verdict": "keep",
+      "source_quotation": "the directors had prepared the annual accounts on a going concern basis;"
+    },
+    {
+      "source_index": 15,
+      "reviewed": true,
+      "text": "The directors prepared the annual accounts assuming the company will continue as a going concern.",
+      "verdict": "keep",
+      "source_quotation": "the directors had prepared the annual accounts on a going concern basis;"
+    },
+    {
+      "source_index": 16,
+      "reviewed": true,
+      "text": "The company has neither given nor received any guarantees in respect of related party receivables or payables.",
+      "verdict": "keep",
+      "source_quotation": "there have been no guarantees provided or received for any related party receivables or payables."
+    },
+    {
+      "source_index": 16,
+      "reviewed": true,
+      "text": "No guarantees have been given or taken for amounts receivable from or payable to related parties.",
+      "verdict": "keep",
+      "source_quotation": "there have been no guarantees provided or received for any related party receivables or payables."
+    },
+    {
+      "source_index": 17,
+      "reviewed": true,
+      "text": "The contingent liability estimates exclude any interest that counterparties might claim.",
+      "verdict": "keep",
+      "source_quotation": "the amounts assessed as contingent liability do not include interest that could be claimed by counter parties."
+    },
+    {
+      "source_index": 17,
+      "reviewed": true,
+      "text": "Interest that counterparties could claim is not included in the amounts assessed as contingent liabilities.",
+      "verdict": "keep",
+      "source_quotation": "the amounts assessed as contingent liability do not include interest that could be claimed by counter parties."
+    }
   ]
 }

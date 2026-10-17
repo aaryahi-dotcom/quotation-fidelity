@@ -3,8 +3,10 @@ Verifier calibration: run this BEFORE any real experiment, on the real
 corpus, to replace verify.FUZZY_THRESHOLD's placeholder value with a
 measured one. Matches the abstract's methodology exactly:
 
-  - 20 positive controls: strings copied verbatim from context -> verifier
-    must accept all 20 (at the exact-match stage, score 1.0).
+  - Positive controls: strings copied verbatim from context -> verifier
+    must accept all of them (at the exact-match stage, score 1.0). The
+    abstract commits to 20; the current set is smaller, and the minimum
+    accepted here is MIN_POSITIVE (see the warning printed at load time).
   - 20 negative controls: plausible financial language absent from the
     corpus -> verifier must reject all 20 (PURE_FABRICATION).
   - Corruption test: genuine quotes progressively degraded (word swap,
@@ -30,6 +32,10 @@ from verify import FUZZY_THRESHOLD, normalise, verify_quotation, Outcome  # noqa
 CONTROLS_DIR = Path(__file__).parent.parent / "controls"
 
 
+MIN_POSITIVE = 15  # lowered from the abstract's 20 on 2026-10-17; see technical-paper.md
+MIN_NEGATIVE = 20
+
+
 def load_controls() -> tuple[list[dict], list[dict]]:
     pos_path = CONTROLS_DIR / "positive.json"
     neg_path = CONTROLS_DIR / "negative.json"
@@ -43,9 +49,14 @@ def load_controls() -> tuple[list[dict], list[dict]]:
     positive = json.loads(pos_path.read_text())
     negative = json.loads(neg_path.read_text())
     if len(positive) < 20 or len(negative) < 20:
-        print(f"WARNING: only {len(positive)} positive / {len(negative)} "
+        print(f"WARNING: {len(positive)} positive / {len(negative)} "
               f"negative controls -- the abstract commits to 20 of each.",
               file=sys.stderr)
+    if len(positive) < MIN_POSITIVE or len(negative) < MIN_NEGATIVE:
+        raise SystemExit(
+            f"Refusing to calibrate: need at least {MIN_POSITIVE} positive and "
+            f"{MIN_NEGATIVE} negative controls, found {len(positive)} and "
+            f"{len(negative)}.")
     return positive, negative
 
 
@@ -78,19 +89,26 @@ def load_paraphrases(positive: list[dict]) -> list[tuple[str, str, str]]:
 
     Only entries that have been reviewed (reviewed == true) and carry verdict
     'keep' or 'fix' are used. Each paraphrase is checked against the chunk of
-    the positive control it was drafted from (source_index).
+    the positive control it was drafted from (source_quotation).
     """
     data = json.loads(PARAPHRASES_PATH.read_text())
+    by_quote = {c["quotation"]: c for c in positive}
     cases = []
     skipped = 0
+    orphaned = 0
     for p in data["paraphrases"]:
         if not p.get("reviewed") or p.get("verdict") not in USABLE_VERDICTS:
             skipped += 1
             continue
-        src = positive[p["source_index"]]
+        # Match on the source sentence, not its index: positive.json changes
+        # length when controls are added or removed.
+        src = by_quote.get(p["source_quotation"])
+        if src is None:
+            orphaned += 1  # source control was removed from positive.json
+            continue
         cases.append((p["text"], src["chunk_id"], src["context"]))
     print(f"Paraphrases: {len(cases)} usable, {skipped} skipped "
-          f"(rejected or unreviewed)")
+          f"(rejected or unreviewed), {orphaned} skipped (source control removed)")
     return cases
 
 

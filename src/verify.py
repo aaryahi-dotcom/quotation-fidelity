@@ -32,10 +32,10 @@ from dataclasses import dataclass
 from enum import Enum
 
 FUZZY_THRESHOLD = 0.80
-                         # on the real corruption-test set before any
-                         # experiment run is treated as final (see abstract:
-                         # "a calibrated fuzzy fallback for PDF extraction
-                         # noise").
+# Chosen from calibrate.py's sweep on the control sets, and reported on those
+# same controls, so it is not a validated constant. It handles near-verbatim
+# extraction noise and word swaps; it does not reliably accept real
+# paraphrases (see docs/technical-paper.md Section 8a).
 
 
 class Outcome(str, Enum):
@@ -97,7 +97,7 @@ def _best_fuzzy_match(needle: str, haystack: str) -> float:
     Known cost: on a 750-word chunk this takes ~0.8s per quotation (measured
     on this sandbox's CPU). At k=10 with every quotation failing exact match,
     that is ~8s per generation purely in fuzzy verification -- acceptable for
-    a one-off ~600-generation batch (worst case ~80 CPU-minutes), but if it
+    a one-off 200-generation batch (worst case ~27 CPU-minutes), but if it
     becomes a bottleneck, add a cheap difflib.quick_ratio() pre-filter before
     the full ratio() call, or port to rapidfuzz once PyPI is reachable.
     """

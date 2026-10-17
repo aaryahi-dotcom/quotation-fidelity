@@ -2,7 +2,8 @@
 Orchestrator: runs the k x theme x prompt_condition grid for each filing in a
 manifest and logs a verification record per generation. The grid per filing is
 5 themes x 4 retrieval depths (k in {1,3,5,10}) x 2 prompt conditions = 40.
-The study corpus has seven filings, so the full grid is 280 generations.
+The manifest lists five usable filings (DHFL and Manpasand are excluded until
+replaced), so the full grid is 200 generations.
 
 Resumable: generations already in results/generations.csv are skipped and new
 rows are appended. A daily-quota error stops the run (exit code 3); restart it

@@ -1,6 +1,6 @@
 # Runbook
 
-Run everything from the project root with the virtualenv active. Scripts in `src/` assume they are run from `src/`.
+Run everything from the project root with the virtualenv active. Scripts in `src/` assume they are run from `src/`. Last updated 2026-10-17.
 
 ## 0. Setup
 
@@ -14,7 +14,7 @@ set -a && source .env && set +a
 
 ## 1. Corpus
 
-Seven filings live in `corpus/` (PDFs are git-ignored). Each must match its label on the cover page before use.
+Seven PDFs live in `corpus/` (PDFs are git-ignored). Five are usable. Each must match its label on the cover page before use.
 
 | File | Label | Status |
 |---|---|---|
@@ -26,23 +26,28 @@ Seven filings live in `corpus/` (PDFs are git-ignored). Each must match its labe
 | dhfl-fy2019.pdf | DHFL | **do not use**: the file is the 2017-18 report |
 | manpasand-fy2018.pdf | Manpasand 2018 | **hold**: partial text layer |
 
-`corpus/manifest.json` lists the filings to run. It currently includes the five usable filings. Add DHFL and Manpasand only after they are replaced or fixed.
+`corpus/manifest.json` lists the five usable filings. Add DHFL and Manpasand only after they are replaced or fixed.
+
+**Extraction.** `src/extract.py` uses `extract_text(use_text_flow=True)`, which follows the PDF's content order. The default order interleaves two-column layouts and splits sentences that wrap across columns. The switch was made on 2026-10-17. Chunks produced before that date have different chunk IDs and must be regenerated (see Section 4).
 
 ## 2. Controls
 
-- `controls/positive.json`: 18 verbatim sentences, each checked against its source chunk.
+- `controls/positive.json`: 17 verbatim sentences, each matched to a chunk under text-flow extraction. The abstract commits to 20; `calibrate.py` requires at least 15 (`MIN_POSITIVE`).
 - `controls/negative.json`: 20 plausible sentences absent from the corpus.
-- `controls/paraphrases_DRAFT.json`: 36 machine-drafted paraphrases, **unreviewed**. Check each one before it is used in calibration.
+- `controls/paraphrases_DRAFT.json`: 36 machine-drafted paraphrases, reviewed on 2026-10-17 (29 keep, 2 fix, 5 reject). Only `keep` and `fix` entries are used, and only with `--with-paraphrases`.
+
+After any change to extraction or chunking, check that each positive still matches its chunk and update `chunk_id` and `context` where the text has moved. See `controls/README.md`.
 
 ## 3. Calibration and threshold
 
 ```bash
 cd src
-python3 calibrate.py          # exact-match check plus fuzzy sweep (slow: several minutes)
-python3 heldout_check.py      # threshold check on a stratified held-out half
+python3 calibrate.py                    # exact-match check plus mechanical fuzzy sweep
+python3 calibrate.py --with-paraphrases # same, plus the reviewed paraphrases
+python3 heldout_check.py                # stability check on a stratified held-out half
 ```
 
-`FUZZY_THRESHOLD` in `src/verify.py` is 0.80. It is the lowest tested threshold with no negative control accepted (0.70 and 0.75 accept the 0.759 negative). It was chosen on the same controls it is reported on, so it is not a validated constant. It must be re-examined once a control set exists that was not used to choose the threshold. See `docs/technical-paper.md` Section 8a.
+`FUZZY_THRESHOLD` in `src/verify.py` is 0.80. It is the lowest tested threshold with no negative control accepted. It was chosen on the same controls it is reported on, so it is not a validated constant. At 0.80 the reviewed real paraphrases are mostly rejected (2 of 31 accepted), so the threshold handles extraction noise and word-level edits, not paraphrase. See `docs/technical-paper.md` Section 8a for the numbers and the scope limit.
 
 ## 4. Generation (resumable, daily quota)
 
@@ -53,6 +58,7 @@ python3 run_experiment.py ../corpus/manifest.json
 
 - Each filing gives 40 generations (5 themes x k in {1,3,5,10} x 2 prompt conditions). The five-filing manifest gives 200.
 - Completed generations in `results/generations.csv` are skipped, so the command can be rerun as often as needed.
+- **Before the first run after the extraction change, move the existing CSV aside.** The 25 rows already in `results/generations.csv` were generated against the old chunk IDs and are not valid for the current chunks.
 - The free Gemini tier allows 20 requests a day for the model. A daily-limit error stops the run with exit code 3. Rerun the next day.
 - SCHEMA_JSON retries are separate requests, so the quota can run out before 20 generations.
 - Other API errors are written as `api_error` rows and retried on the next run.
