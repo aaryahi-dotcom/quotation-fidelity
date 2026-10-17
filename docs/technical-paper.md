@@ -14,10 +14,10 @@ The study asks whether a language model, given excerpts from Indian annual repor
 | Themes | 5 | auditor qualifications and emphases of matter; related-party transactions; promoter share pledging; going-concern disclosures; contingent liabilities and guarantees |
 | Retrieval depth k | 1, 3, 5, 10 | |
 | Prompt conditions | 2 | FREE_FORM and SCHEMA_JSON |
-| Generations | up to 600 | With 7 filings the grid is 7 x 5 x 4 x 2 = 280 |
-| Verifier | Fuzzy matching, threshold calibrated on controls | Placeholder threshold 0.85 until calibration runs |
+| Generations | up to 600 | With the five usable filings in the manifest the grid is 5 x 5 x 4 x 2 = 200 |
+| Verifier | Fuzzy matching, threshold chosen from calibration sweep | Threshold 0.80 (Section 8a). Chosen on the same controls it is reported on, so it is not a validated constant |
 
-Decision: the grid is scaled to the filings actually available (280 generations), not padded to 600. Reducing the company count changes the power of the crisis-versus-control comparison and must be stated in the paper.
+Decision: the grid is scaled to the filings actually available (200 generations, from Yes Bank, IL&FS, Infosys, TCS and HUL), not padded to 600. DHFL and Manpasand are excluded until their files are replaced (Section 4). Reducing the company count changes the power of the crisis-versus-control comparison and must be stated in the paper.
 
 ## 3. Environment
 
@@ -57,7 +57,7 @@ flowchart TB
     P --> R[One generation row]
 ```
 
-Each filing contributes 5 x 4 x 2 = 40 rows. Seven filings give the 280-row expected total used by the dashboard.
+Each filing contributes 5 x 4 x 2 = 40 rows. Five filings give the 200-row expected total used by the dashboard.
 
 ### Figure 3. Control-set build and verification
 
@@ -114,7 +114,7 @@ Decisions and open issues:
   - Infosys: Integrated Annual Report 2024-25. Consistent with FY2025.
   - TCS: Integrated Annual Report 2025-26, labelled "latest". Consistent.
   - HUL: Integrated Annual Report 2025-26, labelled "latest". Consistent.
-  - IL&FS: "Annual Report 2018" on the cover. Fiscal year not yet confirmed from the body.
+  - IL&FS: "Annual Report 2018" on the cover. Fiscal year confirmed as FY2018 by the researcher (2026-10-17).
   - DHFL: the file is the **Annual Report 2017-18**, not FY2019 as labelled. Mismatch. The file must be replaced with the 2018-19 report, or the label and the design must be changed.
   - Manpasand: page 1 is a 17 September 2018 exchange filing letter, not the annual report. Of 131 pages, 12 are blank, and some are image-only, so the text layer is partial. The source must be replaced with a text-based annual report.
 - Infosys is labelled FY2025 by its filename. The "latest" labels for TCS and HUL are not yet tied to a specific year.
@@ -158,7 +158,7 @@ Concern: Manpasand gives 18 chunks from 131 pages, about a fifth of the chunk de
 - `verify.py` uses Python's standard `difflib`. `rapidfuzz` was planned but could not be installed in the build environment. The threshold does not transfer between the two libraries, so the calibration must be run on the library actually used.
 - `normalise()` applies NFKC normalisation, collapses whitespace, unifies quote marks, and rejoins hyphenated line-wrap breaks.
 - Smoke tests: 4 of 4 pass in the build environment.
-- The fuzzy threshold is still the placeholder 0.85. It must be set from the `calibrate.py` sweep, not chosen by hand.
+- The fuzzy threshold is 0.80. It was chosen from the `calibrate.py` sweep on the control sets (Section 8a), and it is not a validated constant.
 
 ## 8. Control sets
 
@@ -221,7 +221,9 @@ Consequences by threshold:
 | 0.80 | 0 | 34 of 36 | Recommended candidate: no negative accepted, 0.041 margin below the closest negative |
 | 0.85 | 0 | 33 of 36 | Current placeholder; larger margin, fewer positives accepted |
 
-Status: `FUZZY_THRESHOLD` is set to 0.80 in `verify.py` and confirmed by the researcher (2026-10-14). The margin over the closest negative is thin (0.041, against a 0.759 score). The threshold must be re-examined once two things exist: paraphrase controls, which `calibrate.py` does not yet sweep, and a held-out control split, so the value is not chosen on the same controls it is tested on. The paper reports both the threshold and this margin.
+Threshold justification. The rule is the lowest tested threshold with full specificity on the controls, meaning no negative control accepted. At 0.70 and 0.75 one negative (score 0.759) is accepted. At 0.80 no negative is accepted and 34 of 36 degraded positives are accepted. So 0.80 is the lowest tested threshold that meets the rule, with a margin of 0.041 below the closest negative. The threshold is set to 0.80 in `verify.py`, the value confirmed by the researcher (2026-10-14).
+
+Limitation: the threshold was chosen on the same control sets it is reported on, so it is not a validated constant. The margin is thin (0.041, against a 0.759 score). Two checks remain before the value is treated as settled: paraphrase controls, which `calibrate.py` does not yet sweep, and a held-out control split, which `heldout_check.py` provides only as a stability check because its controls were used to pick the threshold. A fair test needs controls written after the threshold was fixed. The paper reports both the threshold and this margin.
 
 ## 8b. Control-set limitations
 
@@ -233,7 +235,7 @@ Status: `FUZZY_THRESHOLD` is set to 0.80 in `verify.py` and confirmed by the res
 ## 9. Monitoring
 
 - `run_experiment.py` writes one CSV row per generation to `results/generations.csv`. The file is now line-buffered so progress is visible during a run.
-- `dashboard/index.html` reads that CSV every 5 seconds and shows progress against the expected 280 generations, per-filing counts, verification outcomes, and the latest rows. It is served locally on port 8000 by `python3 -m http.server`.
+- `dashboard/index.html` reads that CSV every 5 seconds and shows progress against the expected 200 generations, per-filing counts, verification outcomes, and the latest rows. It is served locally on port 8000 by `python3 -m http.server`.
 - Status logic: "Running" if a new row appeared in the last 2 minutes, "Quiet" after 2 minutes, "Stalled" after 10 minutes with no new row.
 - The dashboard was checked for CSV parsing and serving. It has not been viewed in a browser.
 
@@ -255,7 +257,7 @@ Status: `FUZZY_THRESHOLD` is set to 0.80 in `verify.py` and confirmed by the res
 1. Verify each PDF's fiscal year on its cover page.
 2. Investigate the Manpasand extraction gap.
 3. Extend the positive controls to 20 (currently 18), with cleaner pledging examples and more crisis-company sentences. Fixing the Yes Bank, DHFL, IL&FS, and Manpasand text extraction is the likely route to crisis-company examples.
-4. Re-examine `FUZZY_THRESHOLD` (set to 0.80, confirmed; Section 8a) once paraphrase controls and a held-out control split exist.
+4. Re-examine `FUZZY_THRESHOLD` (set to 0.80, chosen on the control sets; Section 8a) once paraphrase controls and a held-out control split exist.
 5. Run a 1-filing dry run and read the CSV before spending the full quota.
 6. Decide whether to migrate to `google-genai` before the full run.
 7. Commit the working state with a `.gitignore` for `venv/`, `__pycache__/`, `.env`, and `corpus/`.
@@ -283,6 +285,8 @@ Status: `FUZZY_THRESHOLD` is set to 0.80 in `verify.py` and confirmed by the res
 | 2026-10-15 | `run_experiment.py` now appends to `results/generations.csv` and skips generations already recorded, so daily restarts do not repeat spend. A daily-quota error stops the run with exit code 3 instead of retrying. Per-minute limits still back off and retry. Tested offline on a temporary results file. | src/run_experiment.py |
 | 2026-10-14 | Cover-page check of the corpus: DHFL file is FY2017-18, Manpasand file is a filing letter with a partial text layer. Both need replacing. | docs/technical-paper.md Section 4 |
 | 2026-10-14 | calibrate.py now reports negative-control acceptance at each threshold alongside the degraded-positive counts. | src/calibrate.py |
+| 2026-10-17 | Paraphrase controls reviewed: 29 kept, 2 fixed, 5 rejected. Rejected items stay in the file with verdict "reject" and must be excluded from calibration. | controls/paraphrases_DRAFT.json, controls/paraphrases_REVIEW.md |
+| 2026-10-17 | Threshold 0.80 justified in Section 8a; placeholder 0.85 references removed. Expected generation count set to 200 for the five-filing manifest. ILFS fiscal year confirmed as FY2018. | docs/technical-paper.md, RUNBOOK.md, dashboard |
 
 Diagrams are Mermaid blocks. They render in GitHub, in VS Code's Markdown preview with a Mermaid extension, and in most Markdown tools that support Mermaid. Plain-text viewers show the source.
 

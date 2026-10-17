@@ -22,7 +22,7 @@ Seven filings live in `corpus/` (PDFs are git-ignored). Each must match its labe
 | tcs-latest.pdf | TCS 2026 (FY ending Mar 2026) | verified |
 | hul-latest.pdf | HUL 2026 (FY ending Mar 2026) | verified |
 | yes-bank-fy2020.pdf | YesBank 2020 | verified |
-| ilfs-fy2018.pdf | ILFS 2018 | fiscal year not yet confirmed from the body |
+| ilfs-fy2018.pdf | ILFS 2018 | verified (FY2018, confirmed by the researcher) |
 | dhfl-fy2019.pdf | DHFL | **do not use**: the file is the 2017-18 report |
 | manpasand-fy2018.pdf | Manpasand 2018 | **hold**: partial text layer |
 
@@ -42,7 +42,7 @@ python3 calibrate.py          # exact-match check plus fuzzy sweep (slow: severa
 python3 heldout_check.py      # threshold check on a stratified held-out half
 ```
 
-`FUZZY_THRESHOLD` in `src/verify.py` is 0.80, confirmed by the researcher. It must be re-examined once paraphrase controls are reviewed and a control set exists that was not used to choose the threshold.
+`FUZZY_THRESHOLD` in `src/verify.py` is 0.80. It is the lowest tested threshold with no negative control accepted (0.70 and 0.75 accept the 0.759 negative). It was chosen on the same controls it is reported on, so it is not a validated constant. It must be re-examined once a control set exists that was not used to choose the threshold. See `docs/technical-paper.md` Section 8a.
 
 ## 4. Generation (resumable, daily quota)
 
@@ -73,7 +73,7 @@ cd ~/quotation-fidelity
 python3 -m http.server 8000 --bind 127.0.0.1
 ```
 
-Open http://localhost:8000/dashboard/ to see progress against the expected 280 generations.
+Open http://localhost:8000/dashboard/ to see progress against the expected 200 generations.
 
 ## 7. Paper
 

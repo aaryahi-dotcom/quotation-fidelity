@@ -68,7 +68,10 @@ def extract_pdf(path: str, company: str, fiscal_year: str) -> ExtractionResult:
 
     with pdfplumber.open(path) as pdf:
         for i, pdf_page in enumerate(pdf.pages, start=1):
-            text = pdf_page.extract_text() or ""
+            # use_text_flow follows the PDF's content order, so sentences that
+            # wrap across two-column layouts stay contiguous. The default
+            # geometric order interleaves columns and splits such sentences.
+            text = pdf_page.extract_text(use_text_flow=True) or ""
             total_chars += len(text)
 
             for line in text.splitlines():
