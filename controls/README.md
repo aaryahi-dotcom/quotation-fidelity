@@ -5,7 +5,7 @@ an optional paraphrase file. Current state (2026-10-17):
 
 | File | Entries | Status |
 |---|---|---|
-| `positive.json` | 17 | Verbatim sentences, each matched to its chunk under text-flow extraction. Below the abstract's 20; `calibrate.py` requires at least 15 (`MIN_POSITIVE`). |
+| `positive.json` | 17 | Verbatim sentences, each matched to its chunk under text-flow extraction. The set stops at 17 by decision (2026-10-17); the abstract commits to 20, and the shortfall is stated in the paper. `calibrate.py` requires at least 15 (`MIN_POSITIVE`). |
 | `negative.json` | 20 | Plausible audit language absent from the corpus. Meets the abstract's 20. |
 | `paraphrases_DRAFT.json` | 36 | Machine-drafted paraphrases, reviewed by the researcher on 2026-10-17: 29 keep, 2 fix, 5 reject. Used only with `calibrate.py --with-paraphrases`. Rejects stay in the file and are skipped. |
 | `paraphrases_REVIEW.md` | — | The review sheet with the same verdicts, for reading alongside the JSON. |

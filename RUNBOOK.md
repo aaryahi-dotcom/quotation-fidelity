@@ -22,7 +22,7 @@ Seven PDFs live in `corpus/` (PDFs are git-ignored). Five are usable. Each must 
 | tcs-latest.pdf | TCS 2026 (FY ending Mar 2026) | verified |
 | hul-latest.pdf | HUL 2026 (FY ending Mar 2026) | verified |
 | yes-bank-fy2020.pdf | YesBank 2020 | verified |
-| ilfs-fy2018.pdf | ILFS 2018 | verified (FY2018, confirmed by the researcher) |
+| ilfs-fy2018.pdf | ILFS 2018 | verified from the body text: year ended 31 March 2018 (FY2018, FY 2017-18), with 2017 as comparative |
 | dhfl-fy2019.pdf | DHFL | **do not use**: the file is the 2017-18 report |
 | manpasand-fy2018.pdf | Manpasand 2018 | **hold**: partial text layer |
 
@@ -32,7 +32,7 @@ Seven PDFs live in `corpus/` (PDFs are git-ignored). Five are usable. Each must 
 
 ## 2. Controls
 
-- `controls/positive.json`: 17 verbatim sentences, each matched to a chunk under text-flow extraction. The abstract commits to 20; `calibrate.py` requires at least 15 (`MIN_POSITIVE`).
+- `controls/positive.json`: 17 verbatim sentences, each matched to a chunk under text-flow extraction. **The set stops at 17 by decision (2026-10-17). The abstract commits to 20; this shortfall is stated in the paper.** `calibrate.py` requires at least 15 (`MIN_POSITIVE`).
 - `controls/negative.json`: 20 plausible sentences absent from the corpus.
 - `controls/paraphrases_DRAFT.json`: 36 machine-drafted paraphrases, reviewed on 2026-10-17 (29 keep, 2 fix, 5 reject). Only `keep` and `fix` entries are used, and only with `--with-paraphrases`.
 
