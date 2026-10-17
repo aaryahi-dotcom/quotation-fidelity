@@ -69,6 +69,31 @@ def degrade(text: str, mode: str, rng: random.Random) -> str:
     return text  # paraphrase_stub: caller should supply hand-written paraphrases
 
 
+PARAPHRASES_PATH = CONTROLS_DIR / "paraphrases_DRAFT.json"
+USABLE_VERDICTS = {"keep", "fix"}  # "reject" entries are skipped
+
+
+def load_paraphrases(positive: list[dict]) -> list[tuple[str, str, str]]:
+    """Reviewed paraphrases of positive controls, as (text, chunk_id, context).
+
+    Only entries that have been reviewed (reviewed == true) and carry verdict
+    'keep' or 'fix' are used. Each paraphrase is checked against the chunk of
+    the positive control it was drafted from (source_index).
+    """
+    data = json.loads(PARAPHRASES_PATH.read_text())
+    cases = []
+    skipped = 0
+    for p in data["paraphrases"]:
+        if not p.get("reviewed") or p.get("verdict") not in USABLE_VERDICTS:
+            skipped += 1
+            continue
+        src = positive[p["source_index"]]
+        cases.append((p["text"], src["chunk_id"], src["context"]))
+    print(f"Paraphrases: {len(cases)} usable, {skipped} skipped "
+          f"(rejected or unreviewed)")
+    return cases
+
+
 def run_control_check(positive: list[dict], negative: list[dict]) -> None:
     """Exact-match-only pass: positives should all hit EXACT_MATCH, negatives
     should all hit PURE_FABRICATION, using each control's own supplied
@@ -97,7 +122,8 @@ def run_control_check(positive: list[dict], negative: list[dict]) -> None:
 
 
 def sweep_fuzzy_threshold(positive: list[dict], negative: list[dict], rng: random.Random,
-                           candidates=(0.70, 0.75, 0.80, 0.85, 0.90, 0.95)) -> None:
+                           candidates=(0.70, 0.75, 0.80, 0.85, 0.90, 0.95),
+                           paraphrases: list[tuple[str, str, str]] | None = None) -> None:
     """Degrade each positive control and report, per threshold, how many
     degraded (should-still-match) and original (should-exact-match anyway)
     quotations are accepted. Pick the threshold reported here -- do not
@@ -108,6 +134,8 @@ def sweep_fuzzy_threshold(positive: list[dict], negative: list[dict], rng: rando
         for mode in ("word_swap", "clause_drop"):
             degraded_cases.append((degrade(ctrl["quotation"], mode, rng),
                                     ctrl["chunk_id"], ctrl["context"]))
+    if paraphrases:
+        degraded_cases.extend(paraphrases)
 
     negative_cases = [(n["quotation"], n["chunk_id"], n["context"]) for n in negative]
 
@@ -134,6 +162,12 @@ def sweep_fuzzy_threshold(positive: list[dict], negative: list[dict], rng: rando
 
 
 if __name__ == "__main__":
+    import argparse
+    ap = argparse.ArgumentParser(description=__doc__.split("\n")[1])
+    ap.add_argument("--with-paraphrases", action="store_true",
+                    help="add reviewed paraphrases (keep/fix) to the degraded set")
+    args = ap.parse_args()
     positive, negative = load_controls()
     run_control_check(positive, negative)
-    sweep_fuzzy_threshold(positive, negative, random.Random(42))
+    paras = load_paraphrases(positive) if args.with_paraphrases else None
+    sweep_fuzzy_threshold(positive, negative, random.Random(42), paraphrases=paras)
