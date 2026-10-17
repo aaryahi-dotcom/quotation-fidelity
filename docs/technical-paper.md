@@ -27,7 +27,7 @@ Decision: the grid is scaled to the filings actually available (200 generations,
 - Decision: heavy steps (embedding, FAISS, generation) run on the researcher's own machine, not in a cloud sandbox, because the sandbox could not install the packages or reach PyPI.
 
 Known risks and their state (2026-10-17):
-- Python version: standardised on 3.11.15, which matches the cached bytecode. The offline tests and the smoke test pass under 3.11. The full calibration sweep, the chunk counts and the extraction flips were produced under 3.9.6 and have not been re-run under 3.11 (Section 13.3).
+- Python version: standardised on 3.11.15, which matches the cached bytecode. The calibration sweeps, the held-out check, the chunk counts and the flip count were re-run under 3.11 and match the earlier 3.9.6 results exactly (Section 13.3). The retrieval check has not been re-run under 3.11.
 - SDK: `generate.py` now uses `google-genai`. The deprecated `google-generativeai` package is no longer used. The migrated client has no live API call yet; its request shape and retry loop are tested offline (`tests/test_generate.py`).
 - Fuzzy matching: `difflib` is kept, not `rapidfuzz`. This is a stated limitation (Section 7).
 
@@ -259,6 +259,17 @@ Gap in the calibration method: the sweep measures how many degraded positives ea
 - Highest negative score: 0.759, for "Management has concluded that a material uncertainty exists which casts significant doubt on the company's ability to continue as a going concern."
 - Next highest: 0.655. All other negatives score below 0.55.
 
+Verifier classification metrics on the same control sets (computed 2026-10-17, Python 3.11.15; score = `verify_quotation`'s match score against each item's own chunk; threshold 0.80). These describe the calibration controls, not a held-out test, and they are not metrics of the language model: no generation run has been made.
+
+| Positives used | n positive | n negative | ROC AUC | Precision | Recall | F1 | False-positive rate |
+|---|---|---|---|---|---|---|---|
+| 17 originals | 17 | 20 | 1.000 | 1.000 | 1.000 | 1.000 | 0.000 |
+| 17 originals + 34 mechanical | 51 | 20 | 1.000 | 1.000 | 1.000 | 1.000 | 0.000 |
+| 17 originals + 34 mechanical + 26 paraphrases | 77 | 20 | 0.967 | 1.000 | 0.688 | 0.815 | 0.000 |
+| 26 paraphrases only | 26 | 20 | 0.902 | 1.000 | 0.077 | 0.143 | 0.000 |
+
+Reading. The negatives score between 0.402 and 0.759, so no negative reaches 0.80. The AUC for paraphrases (0.902) shows that the score ranks most paraphrases above the fabrications. The cutoff at 0.80 is what rejects them: lowering it to 0.75 or 0.70 accepts more paraphrases but also admits the 0.759 negative. Precision is 1.000 in every row only because the negative set is small (20 items) and the single high-scoring negative sits below the cutoff. These figures should not be read as performance on unseen quotations.
+
 Threshold justification. The rule is the lowest tested threshold with no negative control accepted. At 0.70 and 0.75 one negative (score 0.759) is accepted. At 0.80 no negative is accepted, and all 34 mechanical degraded positives are accepted. So 0.80 is the lowest tested threshold that meets the rule, with a margin of 0.041 below the closest negative. The threshold is set to 0.80 in `verify.py`.
 
 Scope limit: the rule is met on mechanical degradation only. At 0.80, 2 of 26 reviewed real paraphrases are accepted (24 rejected). The threshold therefore handles extraction noise and word-level edits. It does not reliably accept paraphrases at any tested threshold without also accepting the 0.759 negative. For a verbatim-quotation study, rejecting most paraphrases is the intended behaviour, but the paper must state the scope and must not describe the 0.80 result as validated for paraphrase.
@@ -393,11 +404,14 @@ Standardised on 2026-10-17: Python 3.11.15 in `venv/`, created with `uv venv --p
 | Standard library | `difflib` for fuzzy matching (rapidfuzz not installed) |
 | Embedding model | `all-MiniLM-L6-v2`, maximum sequence length 256 word pieces (checked on 3.9 with sentence-transformers 5.1.2), loaded with `local_files_only` |
 
-Earlier results were produced in a different environment, and they are not re-run under this one unless stated:
-- The calibration sweeps (Section 8a) and the held-out check were run on `origin/main` (`abb418e`) in the Python 3.9.6 venv, with pdfplumber 0.11.8. The verifier uses only the standard library, so the sweep numbers do not depend on those packages, but this has not been confirmed under 3.11.
-- The chunk counts in Section 6 and the flip counts in Section 6 were produced with pdfplumber 0.11.8. pdfplumber 0.11.10 may extract slightly differently, so the chunk counts need re-checking under the new environment before the full run.
-- The retrieval check (Section 6) was run with sentence-transformers 5.1.2 in the 3.9 venv.
-- The offline tests (`tests/test_overlap.py`, `tests/test_generate.py`, 14 tests in total) and the verifier smoke test (4/4) were run under 3.11.15 and pass.
+Re-run under Python 3.11.15 with the current environment (2026-10-17). Every result below matched the earlier 3.9.6 result exactly:
+- Calibration sweeps (mechanical and with paraphrases) and the held-out check: identical tables in Section 8a.
+- Text-flow chunk counts for all seven PDFs: Infosys 261, TCS 276, HUL 302, Yes Bank 297, IL&FS 135, DHFL 204, Manpasand 19 (1,494 in total).
+- Default-order chunk counts for the five usable PDFs: Infosys 257, TCS 243, HUL 294, Yes Bank 299, IL&FS 135.
+- Flip count: 15 of 17 positives match under default order, 17 of 17 under text-flow, 2 flips, no negative or paraphrase matches under either order.
+- Offline tests (`tests/test_overlap.py`, `tests/test_generate.py`, 14 tests) and the smoke test (4/4) pass.
+
+Not re-run under 3.11: the default-order chunk counts for DHFL (189) and Manpasand (18), which are excluded from the study and were not needed for it. The retrieval check (Section 6) was run with sentence-transformers 5.1.2 in the 3.9.6 environment and has not been re-run.
 
 ### 13.4 How to repeat the calibration
 
@@ -408,6 +422,7 @@ cd src
 ../venv/bin/python calibrate.py --with-paraphrases # with the 26 reviewed paraphrases
 ../venv/bin/python heldout_check.py                # stability check at 0.80
 ../venv/bin/python verify.py                       # 4/4 smoke tests
+../venv/bin/python verifier_metrics.py            # AUC, precision, recall, F1 on the controls (Section 8a)
 cd ..
 ./venv/bin/python -m unittest tests/test_overlap.py   # overlap rule, run from the repo root
 ```
