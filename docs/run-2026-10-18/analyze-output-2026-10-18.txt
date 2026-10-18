@@ -1,0 +1,25 @@
+Generations (latest, non-error): 200
+  exact_match                    134  (67.0%)
+  no_finding                      63  (31.5%)
+  fuzzy_match                      3  (1.5%)
+Grounded rate (exact or fuzzy): 68.5%
+
+By theme:
+  auditor qualifications and emphases of matter n= 40  grounded=77.5%  fabrication=0.0%
+  contingent liabilities and guarantees         n= 40  grounded=95.0%  fabrication=0.0%
+  going-concern disclosures                     n= 40  grounded=50.0%  fabrication=0.0%
+  promoter share pledging                       n= 40  grounded=25.0%  fabrication=0.0%
+  related-party transactions                    n= 40  grounded=95.0%  fabrication=0.0%
+
+By k:
+  1                                             n= 50  grounded=46.0%  fabrication=0.0%
+  10                                            n= 50  grounded=86.0%  fabrication=0.0%
+  3                                             n= 50  grounded=66.0%  fabrication=0.0%
+  5                                             n= 50  grounded=76.0%  fabrication=0.0%
+
+By prompt_condition:
+  free_form                                     n=100  grounded=67.0%  fabrication=0.0%
+  schema_json                                   n=100  grounded=70.0%  fabrication=0.0%
+
+By model:
+  gemini-3.5-flash-lite                         n=200  grounded=68.5%  fabrication=0.0%

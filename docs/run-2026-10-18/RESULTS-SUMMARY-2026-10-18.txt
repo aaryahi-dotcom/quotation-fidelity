@@ -1,0 +1,135 @@
+QUOTATION FIDELITY -- EXPERIMENTAL RESULTS
+==========================================================================
+
+Study      : Do Grounded Citations Actually Ground? Measuring Quotation
+             Fidelity in LLM-Based Forensic Analysis of Indian Annual Reports
+Run date   : 2026-10-18
+Model      : gemini-3.5-flash-lite
+Grid       : 5 filings x 5 themes x k in {1,3,5,10} x 2 prompt conditions = 200
+Corpus     : Infosys FY2025, TCS FY2026, HUL FY2026, Yes Bank FY2020, IL&FS FY2018
+             1,271 chunks of 500-800 words, 100-word overlap, text-flow extraction
+Verifier   : difflib, FUZZY_THRESHOLD = 0.80
+Raw file   : results/generations.csv (203 rows; 3 superseded api_error rows retained for the record)
+Usable     : 200 generations, all 200 grid cells present exactly once
+
+1. OUTCOMES
+--------------------------------------------------------------------------
+  exact_match                       134    67.0%
+  fuzzy_match                         3     1.5%
+  no_finding                         63    31.5%
+  provenance_mismatch                 0     0.0%
+  pure_fabrication                    0     0.0%
+  unparsed_output                     0     0.0%
+  schema_failure_after_retries        0     0.0%
+
+  Grounded (exact or fuzzy)         137    68.5%
+  Of the 137 that produced a quotation, grounded: 137/137 (100.0%)
+
+  ZERO fabrications and ZERO provenance mismatches across all 200 generations.
+
+2. THE GROUNDED RATE IS AN ABSTENTION RATE  <-- read before citing any number
+--------------------------------------------------------------------------
+  Fidelity is 100% in every cell, so grounded = 1 - abstention throughout.
+  Movement across k and prompt condition is the model declining to answer,
+  NOT a change in how faithfully it quotes. The k effect is retrieval
+  coverage. Do not report it as fidelity improving with retrieval depth.
+
+  By retrieval depth k:
+    group                                            n  quoted  grounded  of quoted  abstained
+    1                                               50      23    46.0%     100.0%      54.0%
+    3                                               50      33    66.0%     100.0%      34.0%
+    5                                               50      38    76.0%     100.0%      24.0%
+    10                                              50      43    86.0%     100.0%      14.0%
+
+  By prompt condition:
+    group                                            n  quoted  grounded  of quoted  abstained
+    free_form                                      100      67    67.0%     100.0%      33.0%
+    schema_json                                    100      70    70.0%     100.0%      30.0%
+
+  By theme:
+    group                                            n  quoted  grounded  of quoted  abstained
+    auditor qualifications and emphases of matte    40      31    77.5%     100.0%      22.5%
+    contingent liabilities and guarantees           40      38    95.0%     100.0%       5.0%
+    going-concern disclosures                       40      20    50.0%     100.0%      50.0%
+    promoter share pledging                         40      10    25.0%     100.0%      75.0%
+    related-party transactions                      40      38    95.0%     100.0%       5.0%
+
+  By filing:
+    group                                            n  quoted  grounded  of quoted  abstained
+    HUL 2026                                        40      26    65.0%     100.0%      35.0%
+    ILFS 2018                                       40      32    80.0%     100.0%      20.0%
+    Infosys 2025                                    40      23    57.5%     100.0%      42.5%
+    TCS 2026                                        40      30    75.0%     100.0%      25.0%
+    YesBank 2020                                    40      26    65.0%     100.0%      35.0%
+
+3. ABSTENTIONS BY FILING AND THEME (of 8 generations each)
+--------------------------------------------------------------------------
+    theme                                               HUL     ILFS  Infosys      TCS  YesBank
+    auditor qualifications and emphases of matte          3        0        2        2        2
+    contingent liabilities and guarantees                 0        0        2        0        0
+    going-concern disclosures                             5        4        5        0        6
+    promoter share pledging                               6        2        8        8        6
+    related-party transactions                            0        2        0        0        0
+
+  The pattern tracks whether the disclosure plausibly exists: related-party
+  and contingent-liability disclosures are mandatory and almost never
+  abstained on; promoter share pledging is abstained on 8/8 for Infosys and
+  TCS, neither of which has pledged promoter holdings.
+  LIMITATION: no abstention has been verified against the filing, so
+  'correctly silent' and 'retrieval never supplied the chunk' are still
+  confounded.
+
+4. QUOTATION LENGTH (guards against trivial matches)
+--------------------------------------------------------------------------
+  words: min 8, median 43, max 157
+  chars: min 46, median 271, max 963
+  under 10 words: 3 of 137
+
+5. THE THREE FUZZY MATCHES (all extraction artefacts, not paraphrase)
+--------------------------------------------------------------------------
+  Infosys | related-party transactions | k=10 | free_form | score 0.886
+    claimed Infosys_2025_c0250, matched Infosys_2025_c0250
+    Since the estimated aggregate value (`2,975 crore or 1.83% of annual consolidated turnover) of all transactions of the Company and specific subsidiari
+
+  Infosys | related-party transactions | k=10 | schema_json | score 0.886
+    claimed Infosys_2025_c0250, matched Infosys_2025_c0250
+    Since the estimated aggregate value (`2,975 crore or 1.83% of annual consolidated turnover) of all transactions of the Company and specific subsidiari
+
+  ILFS | promoter share pledging | k=10 | free_form | score 0.993
+    claimed ILFS_2018_c0041, matched ILFS_2018_c0041
+    `(ii) Shareholding of Promoters : Not Applicable, as the Company is Professionally managed by its Board of Directors with no identifiable Promoters`
+
+  All three arise from the rupee glyph surviving extraction as a backtick.
+  This is what the 0.80 threshold was calibrated to absorb (see the paper,
+  Section 8a). The two Infosys rows are the same sentence found independently
+  under both prompt conditions.
+
+6. INDEPENDENT AUDIT OF THE ZERO-FABRICATION RESULT
+--------------------------------------------------------------------------
+  The labels above come from the same verifier that produced them, checking
+  only the k chunks supplied for that generation. They were re-checked from
+  scratch against the whole corpus rebuilt from the PDFs:
+    - all 134 exact_match quotations are present in the 1,271-chunk corpus
+    - every one is present in the chunk the model claimed (no missed
+      provenance mismatches)
+    - no generation cited a chunk_id that is not a real chunk
+
+7. SCOPE AND CAVEATS
+--------------------------------------------------------------------------
+  - The run measures gemini-3.5-flash-lite. The study design was written
+    against gemini-3.8-flash, which the free tier caps at 20 requests/day on
+    this project (~10 days for the grid); the Flash-Lite tier allows 500/day.
+    These figures are NOT comparable to a 3.8-Flash run, and Sections 2 and
+    13 of the paper still describe the earlier model.
+  - With zero fabrications everywhere there is no variance in the dependent
+    variable, so the run cannot discriminate between themes, retrieval depths
+    or prompt conditions on quotation fidelity. It bounds fabrication rather
+    than measuring it.
+  - The 31.5% abstention rate is unaudited (see section 3 above).
+  - FUZZY_THRESHOLD = 0.80 was chosen on the same controls it is reported on,
+    so it is not a validated constant.
+  - 3 of 200 generations failed on transient API faults (HTTP 503, connection
+    reset, server disconnect) and were retried successfully.
+
+Full method, decisions and limitations: docs/technical-paper.md (Section 6a
+for this run). Run order: RUNBOOK.md.
