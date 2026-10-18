@@ -1,0 +1,398 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quotation Fidelity — Explorer</title>
+<style>
+  :root {
+    --bg: #f5f6f8; --surface: #ffffff; --surface-2: #eef1f5; --ink: #141a24; --ink-2: #434c5b;
+    --ink-3: #757f8f; --line: #dce1e8; --accent: #2b59c9; --accent-soft: #e7eefc;
+    --ok: #1d7f56; --ok-soft: #e2f4ec; --warn: #a86b12; --warn-soft: #fbf0dc;
+    --bad: #b8392c; --bad-soft: #fae7e4; --idle: #6d7789; --idle-soft: #e9ecf1;
+    --mark: #ffe27a; --mark-ink: #141a24;
+    --radius: 10px; --shadow: 0 1px 2px rgba(16,24,40,.05);
+    --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, Helvetica, Arial, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0e1117; --surface: #161b24; --surface-2: #1c2330; --ink: #e6eaf2; --ink-2: #aab3c3;
+      --ink-3: #7c8699; --line: #283040; --accent: #7fa3ff; --accent-soft: #1b2947;
+      --ok: #4cc38a; --ok-soft: #13302a; --warn: #e6b35c; --warn-soft: #36290f;
+      --bad: #f07b6c; --bad-soft: #3b1e1a; --idle: #8290a3; --idle-soft: #232b38;
+      --mark: #6b5a12; --mark-ink: #fff6cc;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0e1117; --surface: #161b24; --surface-2: #1c2330; --ink: #e6eaf2; --ink-2: #aab3c3;
+    --ink-3: #7c8699; --line: #283040; --accent: #7fa3ff; --accent-soft: #1b2947;
+    --ok: #4cc38a; --ok-soft: #13302a; --warn: #e6b35c; --warn-soft: #36290f;
+    --bad: #f07b6c; --bad-soft: #3b1e1a; --idle: #8290a3; --idle-soft: #232b38;
+    --mark: #6b5a12; --mark-ink: #fff6cc;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--sans); }
+  body { font-size: 14px; line-height: 1.5; }
+  button, select, input { font: inherit; color: inherit; }
+  .app { max-width: 1320px; margin: 0 auto; padding: 22px 22px 48px; }
+
+  header.bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 20px; padding-bottom: 16px; border-bottom: 1px solid var(--line); }
+  header.bar h1 { margin: 0; font-size: 18px; font-weight: 650; letter-spacing: -.01em; }
+  header.bar .sub { color: var(--ink-3); font-size: 12.5px; margin-top: 2px; }
+  .tools { display: flex; gap: 8px; align-items: center; }
+  .btn { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 6px 11px; cursor: pointer; font-size: 12.5px; color: var(--ink-2); }
+  .btn:hover { color: var(--ink); border-color: var(--ink-3); }
+  .btn:focus-visible, select:focus-visible, input:focus-visible, tr[tabindex]:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .summary { display: grid; grid-template-columns: repeat(5, minmax(0,1fr)); gap: 10px; margin: 18px 0 14px; }
+  .sum { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 14px; box-shadow: var(--shadow); }
+  .sum .l { font-size: 11.5px; color: var(--ink-3); text-transform: uppercase; letter-spacing: .07em; font-weight: 650; }
+  .sum .v { font-size: 22px; font-weight: 650; font-variant-numeric: tabular-nums; margin-top: 2px; }
+  .sum .n { font-size: 12px; color: var(--ink-2); }
+  @media (max-width: 900px) { .summary { grid-template-columns: repeat(2, minmax(0,1fr)); } }
+
+  .filters { display: flex; flex-wrap: wrap; gap: 10px; align-items: end; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 14px; box-shadow: var(--shadow); }
+  .field { display: flex; flex-direction: column; gap: 4px; min-width: 130px; }
+  .field label { font-size: 11px; color: var(--ink-3); text-transform: uppercase; letter-spacing: .07em; font-weight: 650; }
+  .field select, .field input { background: var(--surface-2); border: 1px solid var(--line); border-radius: 7px; padding: 6px 8px; min-width: 0; }
+  .field.search { flex: 1 1 220px; }
+  .field.search input { width: 100%; }
+  .count { margin-left: auto; color: var(--ink-3); font-size: 12.5px; align-self: center; font-variant-numeric: tabular-nums; }
+
+  .layout { display: grid; grid-template-columns: minmax(0, 1fr) 420px; gap: 14px; margin-top: 14px; align-items: start; }
+  @media (max-width: 1040px) { .layout { grid-template-columns: 1fr; } }
+
+  .table-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; }
+  .table-scroll { overflow: auto; max-height: 72vh; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  thead th { position: sticky; top: 0; background: var(--surface-2); z-index: 1; text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--ink-3); font-weight: 650; padding: 9px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  tbody td { padding: 9px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  tbody tr { cursor: pointer; }
+  tbody tr:hover { background: var(--surface-2); }
+  tbody tr.sel { background: var(--accent-soft); }
+  td.q { color: var(--ink-2); max-width: 420px; }
+  td.q .clip { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  td.num { font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+  .empty { padding: 36px; text-align: center; color: var(--ink-3); }
+
+  .badge { display: inline-block; font-size: 11px; font-weight: 650; padding: 2px 8px; border-radius: 999px; white-space: nowrap; }
+  .b-exact { background: var(--ok-soft); color: var(--ok); }
+  .b-fuzzy { background: var(--accent-soft); color: var(--accent); }
+  .b-none { background: var(--idle-soft); color: var(--idle); }
+  .b-bad { background: var(--bad-soft); color: var(--bad); }
+  .b-warn { background: var(--warn-soft); color: var(--warn); }
+
+  aside.detail { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); padding: 16px 16px 18px; position: sticky; top: 14px; max-height: calc(100vh - 28px); overflow: auto; }
+  @media (max-width: 1040px) { aside.detail { position: static; max-height: none; } }
+  aside.detail h2 { margin: 0 0 4px; font-size: 14px; font-weight: 650; }
+  .dmeta { display: flex; flex-wrap: wrap; gap: 6px 14px; color: var(--ink-3); font-size: 12px; margin-bottom: 12px; }
+  .verdict { border-radius: 8px; padding: 10px 12px; font-size: 13px; margin-bottom: 14px; }
+  .verdict strong { font-weight: 650; }
+  .block { margin-bottom: 14px; }
+  .block h3 { font-size: 11px; text-transform: uppercase; letter-spacing: .07em; color: var(--ink-3); margin: 0 0 6px; font-weight: 650; }
+  .quote { background: var(--surface-2); border-left: 3px solid var(--accent); border-radius: 6px; padding: 10px 12px; white-space: pre-wrap; word-break: break-word; font-size: 13px; }
+  .chunkhead { display: flex; flex-wrap: wrap; gap: 4px 10px; font-size: 12px; color: var(--ink-3); margin-bottom: 6px; font-family: var(--mono); }
+  .chunk { background: var(--surface-2); border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; max-height: 280px; overflow: auto; white-space: pre-wrap; word-break: break-word; font-size: 12.5px; color: var(--ink-2); }
+  mark { background: var(--mark); color: var(--mark-ink); padding: 0 2px; border-radius: 3px; }
+  .note { font-size: 12px; color: var(--ink-3); margin-top: 6px; }
+  .kv { display: grid; grid-template-columns: max-content 1fr; gap: 4px 14px; font-size: 12.5px; }
+  .kv dt { color: var(--ink-3); }
+  .kv dd { margin: 0; font-variant-numeric: tabular-nums; }
+  .placeholder { color: var(--ink-3); text-align: center; padding: 40px 10px; }
+
+  footer { margin-top: 26px; font-size: 12px; color: var(--ink-3); border-top: 1px solid var(--line); padding-top: 12px; }
+  footer code { font-family: var(--mono); }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header class="bar">
+    <div>
+      <h1>Quotation Fidelity — Explorer</h1>
+      <div class="sub">Browse the 200 generations from the first full run and check each quotation against the chunk the model cited.</div>
+    </div>
+    <div class="tools">
+      <span class="sub" id="source"></span>
+      <button class="btn" id="themeBtn" type="button">Toggle theme</button>
+    </div>
+  </header>
+
+  <section class="summary" aria-label="Run summary" id="summary"></section>
+
+  <section class="filters" aria-label="Filters">
+    <div class="field"><label for="fFiling">Filing</label><select id="fFiling"></select></div>
+    <div class="field"><label for="fTheme">Theme</label><select id="fTheme"></select></div>
+    <div class="field"><label for="fK">Depth k</label><select id="fK"></select></div>
+    <div class="field"><label for="fPrompt">Prompt</label><select id="fPrompt"></select></div>
+    <div class="field"><label for="fOutcome">Outcome</label><select id="fOutcome"></select></div>
+    <div class="field search"><label for="fText">Search quotation</label><input id="fText" type="search" placeholder="e.g. going concern" autocomplete="off"></div>
+    <button class="btn" id="clearBtn" type="button">Clear filters</button>
+    <span class="count" id="count" aria-live="polite"></span>
+  </section>
+
+  <div class="layout">
+    <section class="table-card" aria-label="Generations">
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>Filing</th><th>Theme</th><th>k</th><th>Prompt</th><th>Outcome</th><th>Score</th><th>Quotation</th>
+            </tr>
+          </thead>
+          <tbody id="rows"></tbody>
+        </table>
+        <div class="empty" id="empty" hidden>No generations match these filters.</div>
+      </div>
+    </section>
+
+    <aside class="detail" id="detail" aria-live="polite">
+      <div class="placeholder">Select a generation to see the quotation, the chunk it cites and the verifier's verdict.</div>
+    </aside>
+  </div>
+
+  <footer>
+    Data: <code>docs/pipeline/data.js</code>, built by <code>src/build_explorer.py</code> from the run CSV and the text-flow chunks of the five usable filings. Verdicts are the verifier's, re-checked against the cited chunk. Abstentions have not been verified against the filings.
+  </footer>
+</div>
+
+<script src="data.js"></script>
+<script>
+(() => {
+  "use strict";
+  const DATA = window.EXPLORER;
+  const detail = document.getElementById("detail");
+  if (!DATA) {
+    detail.textContent = "Data file not found: run src/build_explorer.py first.";
+    return;
+  }
+  const ROWS = DATA.generations;
+  const CHUNKS = DATA.chunks;
+
+  // ---------- labels ----------
+  const OUTCOME = {
+    exact_match: { label: "Exact match", cls: "b-exact", tone: "ok",
+      text: "The quotation appears word for word in the chunk the model cited." },
+    fuzzy_match: { label: "Fuzzy match", cls: "b-fuzzy", tone: "accent",
+      text: "Not word for word, but at least 0.80 similar to a passage in the cited chunk. Usually an extraction artefact." },
+    no_finding: { label: "No finding", cls: "b-none", tone: "idle",
+      text: "The model returned no quotation for this theme. Not yet checked against the filing." },
+    provenance_mismatch: { label: "Wrong chunk", cls: "b-warn", tone: "warn",
+      text: "The quotation appears in a different chunk than the one cited." },
+    pure_fabrication: { label: "Fabricated", cls: "b-bad", tone: "bad",
+      text: "The quotation does not appear in any supplied chunk." },
+    unparsed_output: { label: "Unparsed", cls: "b-warn", tone: "warn",
+      text: "The model's reply could not be read as a finding." },
+    schema_failure_after_retries: { label: "Schema failure", cls: "b-warn", tone: "warn",
+      text: "The reply did not match the required JSON schema after retries." },
+  };
+  const LABEL = (k) => (OUTCOME[k] ? OUTCOME[k].label : k);
+  const PROMPT = { free_form: "Free form", schema_json: "Schema JSON" };
+  const FILING_NAME = {
+    Infosys: "Infosys FY2025", TCS: "TCS FY2026", HUL: "HUL FY2026",
+    YesBank: "Yes Bank FY2020", ILFS: "IL&FS FY2018",
+  };
+  const filingLabel = (c, fy) => FILING_NAME[c] || `${c} ${fy}`;
+
+  // ---------- helpers ----------
+  const $ = (id) => document.getElementById(id);
+  const el = (tag, cls, text) => {
+    const n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (text !== undefined && text !== null) n.textContent = text;
+    return n;
+  };
+  const uniq = (arr) => [...new Set(arr)];
+  const fmtScore = (s) => (s === null || s === undefined ? "—" : s.toFixed(3));
+
+  // Whitespace-tolerant search: the quote's words, joined by any whitespace run.
+  const findSpan = (haystack, needle) => {
+    if (!needle || !needle.trim()) return null;
+    const words = needle.trim().split(/\s+/).map((w) => w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
+    const m = new RegExp(words.join("\\s+"), "i").exec(haystack);
+    return m ? { start: m.index, end: m.index + m[0].length } : null;
+  };
+
+  // Text with the matched span wrapped in <mark>. Built with DOM nodes, never innerHTML.
+  const highlighted = (text, span) => {
+    const frag = document.createDocumentFragment();
+    if (!span) { frag.appendChild(document.createTextNode(text)); return frag; }
+    frag.appendChild(document.createTextNode(text.slice(0, span.start)));
+    frag.appendChild(el("mark", null, text.slice(span.start, span.end)));
+    frag.appendChild(document.createTextNode(text.slice(span.end)));
+    return frag;
+  };
+
+  // ---------- summary ----------
+  const count = (fn) => ROWS.filter(fn).length;
+  const quoted = count((r) => r.quotation && r.quotation.trim().length > 0);
+  const exact = count((r) => r.outcome === "exact_match");
+  const fuzzy = count((r) => r.outcome === "fuzzy_match");
+  const none = count((r) => r.outcome === "no_finding");
+  const fab = count((r) => r.outcome === "pure_fabrication" || r.outcome === "provenance_mismatch");
+  const summary = [
+    { l: "Generations", v: ROWS.length, n: "5 filings × 5 themes × 4 depths × 2 prompts" },
+    { l: "Quoted", v: quoted, n: `${exact} exact · ${fuzzy} fuzzy` },
+    { l: "No finding", v: none, n: `${((none / ROWS.length) * 100).toFixed(1)}% abstained` },
+    { l: "Fabricated or wrong chunk", v: fab, n: "zero in this run" },
+    { l: "Model", v: "Flash-Lite", n: "gemini-3.5-flash-lite" },
+  ];
+  $("summary").replaceChildren(...summary.map((s) => {
+    const box = el("div", "sum");
+    box.append(el("div", "l", s.l), el("div", "v", String(s.v)), el("div", "n", s.n));
+    return box;
+  }));
+  $("source").textContent = `${DATA.meta.source_csv} · ${DATA.meta.rows} generations`;
+
+  // ---------- filters ----------
+  const fill = (sel, values, labelFn, allLabel) => {
+    sel.replaceChildren(new Option(allLabel, ""), ...values.map((v) => new Option(labelFn(v), v)));
+  };
+  const FILINGS = uniq(ROWS.map((r) => `${r.company}|${r.fiscal_year}`));
+  fill($("fFiling"), FILINGS, (v) => { const [c, y] = v.split("|"); return filingLabel(c, y); }, "All filings");
+  fill($("fTheme"), uniq(ROWS.map((r) => r.theme)).sort(), (t) => t, "All themes");
+  fill($("fK"), uniq(ROWS.map((r) => r.k)).sort((a, b) => a - b), (k) => `k = ${k}`, "All depths");
+  fill($("fPrompt"), uniq(ROWS.map((r) => r.prompt)), (p) => PROMPT[p] || p, "Both prompts");
+  fill($("fOutcome"), uniq(ROWS.map((r) => r.outcome)), (o) => LABEL(o), "All outcomes");
+
+  const state = { selected: null };
+  const rowKey = (r) => `${r.company}|${r.fiscal_year}|${r.theme}|${r.k}|${r.prompt}`;
+
+  const matches = (r) => {
+    const f = $("fFiling").value, t = $("fTheme").value, k = $("fK").value;
+    const p = $("fPrompt").value, o = $("fOutcome").value, q = $("fText").value.trim().toLowerCase();
+    if (f && `${r.company}|${r.fiscal_year}` !== f) return false;
+    if (t && r.theme !== t) return false;
+    if (k && String(r.k) !== k) return false;
+    if (p && r.prompt !== p) return false;
+    if (o && r.outcome !== o) return false;
+    if (q && !(r.quotation || "").toLowerCase().includes(q)) return false;
+    return true;
+  };
+
+  // ---------- table ----------
+  const tbody = $("rows");
+  const render = () => {
+    const visible = ROWS.filter(matches);
+    tbody.replaceChildren();
+    visible.forEach((r) => {
+      const key = rowKey(r);
+      const tr = el("tr");
+      tr.tabIndex = 0;
+      tr.dataset.key = key;
+      if (state.selected === key) tr.classList.add("sel");
+      const o = OUTCOME[r.outcome] || { cls: "b-none", label: r.outcome };
+      const badgeCell = el("td");
+      badgeCell.append(el("span", `badge ${o.cls}`, o.label));
+      const quoteCell = el("td", "q");
+      quoteCell.append(el("div", "clip", r.quotation || "—"));
+      tr.append(
+        el("td", null, filingLabel(r.company, r.fiscal_year)),
+        el("td", null, r.theme),
+        el("td", "num", String(r.k)),
+        el("td", null, PROMPT[r.prompt] || r.prompt),
+        badgeCell,
+        el("td", "num", fmtScore(r.score)),
+        quoteCell,
+      );
+      tr.addEventListener("click", () => select(r));
+      tr.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") { e.preventDefault(); select(r); }
+      });
+      tbody.appendChild(tr);
+    });
+    $("empty").hidden = visible.length > 0;
+    $("count").textContent = `${visible.length} of ${ROWS.length} shown`;
+  };
+
+  // ---------- detail ----------
+  const select = (r) => {
+    state.selected = rowKey(r);
+    document.querySelectorAll("#rows tr").forEach((tr) => tr.classList.toggle("sel", tr.dataset.key === state.selected));
+    renderDetail(r);
+    if (matchMedia("(max-width: 1040px)").matches) detail.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
+  const verdictBox = (r) => {
+    const o = OUTCOME[r.outcome] || { tone: "idle", text: "", label: r.outcome };
+    const box = el("div", "verdict");
+    box.style.background = `var(--${o.tone}-soft)`;
+    box.style.color = `var(--${o.tone})`;
+    box.append(el("strong", null, `${o.label}. `), document.createTextNode(o.text));
+    return box;
+  };
+
+  const chunkBlock = (title, id, quote) => {
+    const wrap = el("div", "block");
+    wrap.append(el("h3", null, title));
+    if (!id) { wrap.append(el("div", "note", "No chunk was cited.")); return wrap; }
+    const c = CHUNKS[id];
+    const head = el("div", "chunkhead");
+    head.append(el("span", null, id));
+    if (c) {
+      head.append(el("span", null, `pp. ${c.page_start}–${c.page_end}`));
+      if (c.section) head.append(el("span", null, c.section));
+    }
+    wrap.append(head);
+    if (!c) { wrap.append(el("div", "note", "Chunk text not in the data file.")); return wrap; }
+    const box = el("div", "chunk");
+    const span = quote ? findSpan(c.text, quote) : null;
+    box.appendChild(highlighted(c.text, span));
+    wrap.append(box);
+    if (quote && !span) {
+      wrap.append(el("div", "note", "The quotation was not found word for word in this chunk, so nothing is highlighted."));
+    }
+    return wrap;
+  };
+
+  const renderDetail = (r) => {
+    detail.replaceChildren();
+    detail.append(el("h2", null, `${filingLabel(r.company, r.fiscal_year)} · ${r.theme}`));
+    const meta = el("div", "dmeta");
+    meta.append(el("span", null, `k = ${r.k}`), el("span", null, PROMPT[r.prompt] || r.prompt),
+                el("span", null, r.model), el("span", null, `attempts ${r.attempts ?? "—"}`));
+    detail.append(meta, verdictBox(r));
+
+    const q = el("div", "block");
+    q.append(el("h3", null, "Quotation"));
+    q.append(el("div", "quote", r.quotation || "No quotation returned for this theme."));
+    detail.append(q);
+
+    if (r.outcome === "no_finding") {
+      detail.append(el("div", "note", "The model reported no finding. Whether the filing really lacks this disclosure, or the retrieved chunks did not include it, has not been checked."));
+    } else {
+      detail.append(chunkBlock("Cited chunk", r.cited, r.quotation));
+      if (r.matched && r.matched !== r.cited) detail.append(chunkBlock("Matched chunk", r.matched, r.quotation));
+    }
+
+    const dl = el("dl", "kv");
+    [["Match score", fmtScore(r.score)], ["Cited", r.cited || "—"], ["Matched", r.matched || "—"]]
+      .forEach(([k, v]) => dl.append(el("dt", null, k), el("dd", null, v)));
+    const info = el("div", "block");
+    info.append(el("h3", null, "Verifier"), dl);
+    detail.append(info);
+  };
+
+  // ---------- wiring ----------
+  ["fFiling", "fTheme", "fK", "fPrompt", "fOutcome"].forEach((id) => $(id).addEventListener("change", render));
+  $("fText").addEventListener("input", render);
+  $("clearBtn").addEventListener("click", () => {
+    ["fFiling", "fTheme", "fK", "fPrompt", "fOutcome"].forEach((id) => { $(id).value = ""; });
+    $("fText").value = "";
+    render();
+  });
+  $("themeBtn").addEventListener("click", () => {
+    const root = document.documentElement;
+    const cur = root.getAttribute("data-theme");
+    const dark = cur === "dark" || (!cur && matchMedia("(prefers-color-scheme: dark)").matches);
+    root.setAttribute("data-theme", dark ? "light" : "dark");
+  });
+
+  render();
+  const first = ROWS.find((r) => r.outcome === "exact_match");
+  if (first) select(first);
+})();
+</script>
+</body>
+</html>
